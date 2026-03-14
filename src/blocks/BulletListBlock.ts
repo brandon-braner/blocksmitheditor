@@ -12,13 +12,10 @@ export const bulletListBlock: BlockDefinition<'bullet-list'> = {
   defaultProps: () => ({}),
 
   render(block) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bs-bullet-list';
+    const ul = document.createElement('ul');
+    ul.className = 'bs-bullet-list';
 
-    const bullet = document.createElement('span');
-    bullet.className = 'bs-bullet';
-    bullet.textContent = '•';
-    bullet.setAttribute('contenteditable', 'false');
+    const li = document.createElement('li');
 
     const content = document.createElement('div');
     content.className = 'bs-list-content';
@@ -28,9 +25,9 @@ export const bulletListBlock: BlockDefinition<'bullet-list'> = {
       content.innerHTML = renderInlineContent(block.content);
     }
 
-    wrapper.appendChild(bullet);
-    wrapper.appendChild(content);
-    return wrapper;
+    li.appendChild(content);
+    ul.appendChild(li);
+    return ul;
   },
 
   parseContent(element) {

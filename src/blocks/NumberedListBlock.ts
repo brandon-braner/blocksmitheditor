@@ -12,9 +12,6 @@ export const numberedListBlock: BlockDefinition<'numbered-list'> = {
   defaultProps: () => ({}),
 
   render(block, context) {
-    const wrapper = document.createElement('div');
-    wrapper.className = 'bs-numbered-list';
-
     // Compute number from position in consecutive numbered-list run
     const blocks = context.editorState.getBlocks();
     const idx = blocks.findIndex((b) => b.id === block.id);
@@ -27,10 +24,11 @@ export const numberedListBlock: BlockDefinition<'numbered-list'> = {
       }
     }
 
-    const number = document.createElement('span');
-    number.className = 'bs-number';
-    number.textContent = `${num}.`;
-    number.setAttribute('contenteditable', 'false');
+    const ol = document.createElement('ol');
+    ol.className = 'bs-numbered-list';
+    ol.setAttribute('start', String(num));
+
+    const li = document.createElement('li');
 
     const content = document.createElement('div');
     content.className = 'bs-list-content';
@@ -40,9 +38,9 @@ export const numberedListBlock: BlockDefinition<'numbered-list'> = {
       content.innerHTML = renderInlineContent(block.content);
     }
 
-    wrapper.appendChild(number);
-    wrapper.appendChild(content);
-    return wrapper;
+    li.appendChild(content);
+    ol.appendChild(li);
+    return ol;
   },
 
   parseContent(element) {

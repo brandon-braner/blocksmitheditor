@@ -118,19 +118,29 @@
 /* Lists */
 .bs-bullet-list,
 .bs-numbered-list {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
+  margin: 0;
+  padding-left: 28px;
+  list-style-position: outside;
 }
 
-.bs-bullet,
-.bs-number {
-  flex-shrink: 0;
-  width: 20px;
-  text-align: right;
-  color: var(--bs-text-color);
-  padding-top: 1px;
-  user-select: none;
+.bs-bullet-list {
+  list-style-type: disc;
+}
+
+.bs-numbered-list {
+  list-style-type: decimal;
+}
+
+.bs-bullet-list li,
+.bs-numbered-list li {
+  padding-left: 4px;
+}
+
+/* Remove spacing between consecutive list items so they appear as one list */
+.bs-block[data-block-type="bullet-list"] + .bs-block[data-block-type="bullet-list"],
+.bs-block[data-block-type="numbered-list"] + .bs-block[data-block-type="numbered-list"] {
+  margin-top: calc(-1 * var(--bs-block-spacing));
+  padding-top: 0;
 }
 
 .bs-list-content {

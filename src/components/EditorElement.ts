@@ -173,8 +173,20 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.eventBus.on('block:removed', (data) => {
       const { block, index } = data as { block: Block; index: number };
       this.removeBlockElement(block.id);
-      if (block.type === 'numbered-list') {
+
+      // After any block is removed, check if neighboring blocks are
+      // numbered-list items that need renumbering. This handles:
+      // 1. A numbered-list item being deleted directly
+      // 2. A non-list block between two numbered runs being deleted,
+      //    causing the runs to merge
+      const blocks = this.editorState.getBlocks();
+      // Check the block now at `index` (the one that shifted up)
+      if (index < blocks.length && blocks[index].type === 'numbered-list') {
         this.renumberListRun(index);
+      }
+      // Check the block before the removal point
+      if (index > 0 && blocks[index - 1]?.type === 'numbered-list') {
+        this.renumberListRun(index - 1);
       }
     });
 
@@ -182,9 +194,25 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       if (this.suppressRerender) return;
       const { block } = data as { block: Block };
       this.updateBlockElement(block);
+
+      // Renumber if this block IS a numbered-list item
       if (block.type === 'numbered-list') {
         const idx = this.editorState.getBlockIndex(block.id);
         this.renumberListRun(idx);
+      } else {
+        // Also renumber if neighboring blocks are numbered-list items,
+        // which happens when a numbered-list item was just converted
+        // to another type (e.g. paragraph via Backspace or Enter).
+        const idx = this.editorState.getBlockIndex(block.id);
+        const blocks = this.editorState.getBlocks();
+        // Check block after (items that follow the converted block)
+        if (idx + 1 < blocks.length && blocks[idx + 1].type === 'numbered-list') {
+          this.renumberListRun(idx + 1);
+        }
+        // Check block before (items that precede the converted block)
+        if (idx > 0 && blocks[idx - 1].type === 'numbered-list') {
+          this.renumberListRun(idx - 1);
+        }
       }
     });
 
@@ -318,13 +346,13 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       runStart--;
     }
 
-    // Walk forward and patch every number label
+    // Walk forward and patch every ol start attribute
     for (let i = runStart; i < blocks.length && blocks[i].type === 'numbered-list'; i++) {
       const wrapper = this.blockElements.get(blocks[i].id);
       if (!wrapper) continue;
-      const numberEl = wrapper.querySelector('.bs-number') as HTMLElement;
-      if (numberEl) {
-        numberEl.textContent = `${i - runStart + 1}.`;
+      const ol = wrapper.querySelector('ol') as HTMLOListElement;
+      if (ol) {
+        ol.setAttribute('start', String(i - runStart + 1));
       }
     }
   }
