@@ -1,0 +1,42 @@
+{
+  "name": "@blocksmith/editor",
+  "version": "0.1.0",
+  "description": "A framework-agnostic block-style editor with AI integration",
+  "type": "module",
+  "main": "./dist/blocksmith-editor.umd.cjs",
+  "module": "./dist/blocksmith-editor.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/blocksmith-editor.js",
+      "require": "./dist/blocksmith-editor.umd.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "editor",
+    "block-editor",
+    "notion",
+    "web-components",
+    "ai",
+    "rich-text"
+  ],
+  "author": "Brandon Braner",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vite": "^6.0.0",
+    "vite-plugin-dts": "^4.3.0"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1"
+  }
+}
