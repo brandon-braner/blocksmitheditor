@@ -82,7 +82,7 @@
   word-break: break-word;
 }
 
-[contenteditable="true"]:empty::before {
+[contenteditable="true"]:empty:focus::before {
   content: attr(data-placeholder);
   color: var(--bs-placeholder-color);
   pointer-events: none;
