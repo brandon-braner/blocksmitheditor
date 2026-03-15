@@ -29,10 +29,6 @@ export { BlockRegistry } from './core/BlockRegistry.js';
 export { AIManager } from './ai/AIManager.js';
 export { OpenAICompatibleProvider } from './ai/providers/OpenAICompatibleProvider.js';
 export type { OpenAIProviderConfig } from './ai/providers/OpenAICompatibleProvider.js';
-export { AnthropicProvider } from './ai/providers/AnthropicProvider.js';
-export type { AnthropicProviderConfig } from './ai/providers/AnthropicProvider.js';
-export { OllamaProvider } from './ai/providers/OllamaProvider.js';
-export type { OllamaProviderConfig } from './ai/providers/OllamaProvider.js';
 export { EditorElement } from './components/EditorElement.js';
 export { hljs } from './blocks/CodeBlock.js';
 

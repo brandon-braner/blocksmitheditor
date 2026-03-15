@@ -37,9 +37,7 @@
     "vite-plugin-dts": "^4.3.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.78.0",
     "highlight.js": "^11.11.1",
-    "ollama": "^0.6.3",
     "openai": "^6.29.0"
   }
 }

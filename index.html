@@ -82,53 +82,29 @@
   <pre id="output"></pre>
 
   <script type="module">
-    import { createEditor, OpenAICompatibleProvider, AnthropicProvider, OllamaProvider } from './src/index.ts';
+    import { createEditor, OpenAICompatibleProvider } from './src/index.ts';
 
-    // AI Provider — configure via env vars in .env file:
-    //   VITE_AI_PROVIDER  → 'openai' (default), 'anthropic', or 'ollama'
-    //   VITE_AI_BASE_URL  → API endpoint (not needed for anthropic; optional for ollama)
-    //   VITE_AI_MODEL     → Model name
-    //   VITE_AI_API_KEY   → Your API key (not needed for ollama)
-    const AI_PROVIDER = import.meta.env.VITE_AI_PROVIDER || 'openai';
-    const AI_BASE_URL = import.meta.env.VITE_AI_BASE_URL || '';
+    // AI Provider — all requests go through a LiteLLM proxy.
+    // Configure via env vars in .env file:
+    //   VITE_AI_BASE_URL  → LiteLLM proxy URL (default: http://localhost:4000)
+    //   VITE_AI_MODEL     → Model name to request from the proxy
+    //   VITE_AI_API_KEY   → LiteLLM master key (sent as Bearer token)
+    const AI_BASE_URL = import.meta.env.VITE_AI_BASE_URL || 'http://localhost:4000';
     const AI_MODEL = import.meta.env.VITE_AI_MODEL || '';
     const AI_API_KEY = import.meta.env.VITE_AI_API_KEY || '';
 
     async function createAIProvider() {
-      // Anthropic (native SDK)
-      if (AI_PROVIDER === 'anthropic') {
-        if (!AI_API_KEY) {
-          console.log('⚠️  VITE_AI_PROVIDER=anthropic but no VITE_AI_API_KEY set — using mock');
-          return createMockProvider();
-        }
-        console.log(`✅ Using Anthropic provider (model: ${AI_MODEL || 'claude-sonnet-4-20250514'})`);
-        return new AnthropicProvider({
-          apiKey: AI_API_KEY,
-          model: AI_MODEL || undefined,
-        });
-      }
-
-      // Ollama (native SDK)
-      if (AI_PROVIDER === 'ollama') {
-        console.log(`✅ Using Ollama provider (model: ${AI_MODEL || 'llama3'}${AI_BASE_URL ? `, host: ${AI_BASE_URL}` : ''})`);
-        return new OllamaProvider({
-          model: AI_MODEL || undefined,
-          host: AI_BASE_URL || undefined,
-        });
-      }
-
-      // OpenAI-compatible (OpenAI, LiteLLM, etc.)
-      if (!AI_BASE_URL && !AI_API_KEY) {
-        console.log('ℹ️  No VITE_AI_BASE_URL or VITE_AI_API_KEY set — using mock AI provider');
+      if (!AI_MODEL) {
+        console.log('ℹ️  No VITE_AI_MODEL set — using mock AI provider');
         console.log('   See .env.example for setup instructions');
         return createMockProvider();
       }
 
-      console.log(`✅ Using OpenAI-compatible provider${AI_BASE_URL ? ` at ${AI_BASE_URL}` : ''} (model: ${AI_MODEL || 'gpt-4o-mini'})`);
+      console.log(`✅ Using LiteLLM proxy at ${AI_BASE_URL} (model: ${AI_MODEL})`);
       return new OpenAICompatibleProvider({
-        baseUrl: AI_BASE_URL || undefined,
-        model: AI_MODEL || 'gpt-4o-mini',
-        apiKey: AI_API_KEY,
+        baseUrl: AI_BASE_URL,
+        model: AI_MODEL,
+        apiKey: AI_API_KEY || 'not-needed',
       });
     }
 
