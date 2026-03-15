@@ -341,6 +341,8 @@ export class ToolbarElement {
   // AI ACTIONS
   // ============================================================
 
+  private aiEditInput: HTMLDivElement | null = null;
+
   private async handleAIClick(item: AIMenuItem): Promise<void> {
     if (!this.aiManager || !this.aiContext) return;
 
@@ -350,39 +352,120 @@ export class ToolbarElement {
       return;
     }
 
-    // Map toolbar AI items to registered AI actions
-    const actionMap: Record<string, string> = {
-      improve: 'rewrite',
-      proofread: 'rewrite',
-      explain: 'expand',
-      reformat: 'rewrite',
-      editWithAI: 'rewrite',
-    };
+    // "Edit with AI" shows a text input for custom instructions
+    if (item.id === 'editWithAI') {
+      this.showEditInput();
+      return;
+    }
 
-    const actionId = actionMap[item.id];
-    if (!actionId) return;
+    // All other actions map directly to their action ID
+    const actionId = item.id;
+    const action = this.aiManager.getAction(actionId);
+    if (!action) {
+      console.warn(`AI action "${actionId}" not registered`);
+      return;
+    }
 
-    // Build a custom prompt based on the item
-    const promptMap: Record<string, string> = {
-      improve: 'Improve the writing quality of this text while preserving its meaning.',
-      proofread: 'Proofread this text for grammar, spelling, and punctuation errors. Fix any issues.',
-      explain: 'Explain the following text in simpler, clearer terms.',
-      reformat: 'Reformat and restructure this text for better readability.',
-      editWithAI: 'Edit and improve this text.',
-    };
+    await this.executeAIAction(actionId, this.aiContext);
+  }
 
-    const context: AIActionContext = {
-      ...this.aiContext,
-      selectedText: promptMap[item.id] + '\n\nText: ' + this.aiContext.selectedText,
-    };
+  private async executeAIAction(
+    actionId: string,
+    context: AIActionContext
+  ): Promise<void> {
+    if (!this.aiManager) return;
+
+    this.showAILoading();
 
     try {
       await this.aiManager.executeAction(actionId, context);
     } catch (err) {
       console.error('AI action failed:', err);
+    } finally {
+      this.hideAILoading();
+      this.hide();
     }
+  }
 
-    this.hide();
+  // --- Loading indicator ---
+
+  private showAILoading(): void {
+    // Disable all buttons and show loading text
+    const buttons = this.element.querySelectorAll('button');
+    buttons.forEach((btn) => {
+      (btn as HTMLButtonElement).disabled = true;
+      (btn as HTMLButtonElement).style.opacity = '0.5';
+      (btn as HTMLButtonElement).style.pointerEvents = 'none';
+    });
+
+    const loadingBar = document.createElement('div');
+    loadingBar.className = 'bs-toolbar-loading';
+    loadingBar.innerHTML = '<span class="bs-toolbar-spinner"></span> Thinking...';
+    loadingBar.style.cssText =
+      'display: flex; align-items: center; gap: 8px; padding: 6px 12px; ' +
+      'color: #a78bfa; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.1);';
+    this.element.appendChild(loadingBar);
+  }
+
+  private hideAILoading(): void {
+    const loading = this.element.querySelector('.bs-toolbar-loading');
+    loading?.remove();
+
+    const buttons = this.element.querySelectorAll('button');
+    buttons.forEach((btn) => {
+      (btn as HTMLButtonElement).disabled = false;
+      (btn as HTMLButtonElement).style.opacity = '';
+      (btn as HTMLButtonElement).style.pointerEvents = '';
+    });
+  }
+
+  // --- Edit with AI text input ---
+
+  private showEditInput(): void {
+    this.saveSelection();
+    this.hideEditInput();
+
+    this.aiEditInput = document.createElement('div');
+    this.aiEditInput.className = 'bs-toolbar-link-row';
+
+    const input = document.createElement('input');
+    input.className = 'bs-toolbar-link-input';
+    input.type = 'text';
+    input.placeholder = 'Tell AI how to edit this text...';
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const instruction = input.value.trim();
+        if (instruction && this.aiContext) {
+          // Pack instruction + original text with separator
+          const editContext: AIActionContext = {
+            ...this.aiContext,
+            selectedText: instruction + '\n---\n' + this.aiContext.selectedText,
+          };
+          this.hideEditInput();
+          this.executeAIAction('editWithAI', editContext);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        this.hideEditInput();
+      }
+    });
+
+    input.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+    });
+
+    this.aiEditInput.appendChild(input);
+    this.element.appendChild(this.aiEditInput);
+    requestAnimationFrame(() => input.focus());
+  }
+
+  private hideEditInput(): void {
+    if (this.aiEditInput) {
+      this.aiEditInput.remove();
+      this.aiEditInput = null;
+    }
   }
 
   // ============================================================
@@ -452,9 +535,14 @@ export class ToolbarElement {
     this.element.remove();
     this.hideColorPopover();
     this.hideLinkInput();
+    this.hideEditInput();
     this.onFormat = null;
     this.aiContext = null;
     this.savedRange = null;
+  }
+
+  isEditingWithAI(): boolean {
+    return this.aiEditInput !== null;
   }
 
   isVisible(): boolean {

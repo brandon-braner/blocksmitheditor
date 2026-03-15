@@ -36,6 +36,11 @@ import { writeAction } from '../ai/actions/WriteAction.js';
 import { rewriteAction } from '../ai/actions/RewriteAction.js';
 import { summarizeAction } from '../ai/actions/SummarizeAction.js';
 import { expandAction } from '../ai/actions/ExpandAction.js';
+import { improveAction } from '../ai/actions/ImproveAction.js';
+import { proofreadAction } from '../ai/actions/ProofreadAction.js';
+import { explainAction } from '../ai/actions/ExplainAction.js';
+import { reformatAction } from '../ai/actions/ReformatAction.js';
+import { editWithAIAction } from '../ai/actions/EditWithAIAction.js';
 
 import { SlashMenuElement } from './SlashMenuElement.js';
 import { ToolbarElement } from './ToolbarElement.js';
@@ -115,6 +120,11 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.aiManager.registerAction(rewriteAction);
     this.aiManager.registerAction(summarizeAction);
     this.aiManager.registerAction(expandAction);
+    this.aiManager.registerAction(improveAction);
+    this.aiManager.registerAction(proofreadAction);
+    this.aiManager.registerAction(explainAction);
+    this.aiManager.registerAction(reformatAction);
+    this.aiManager.registerAction(editWithAIAction);
 
     // Initialize menus
     this.slashMenu = new SlashMenuElement(shadow);
@@ -715,6 +725,9 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   // ============================================================
 
   private handleSelectionChange = (): void => {
+    // Don't dismiss toolbar while AI edit input is active
+    if (this.toolbar.isEditingWithAI()) return;
+
     const sel = getShadowSelection(this.shadowRoot!);
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
       this.toolbar.hide();
@@ -735,7 +748,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       : null;
 
     let aiContext: AIActionContext | undefined;
-    if (focusedBlock && this.aiManager.getProvider()) {
+    if (focusedBlock) {
       aiContext = {
         selectedText: getSelectedText(this.shadowRoot!),
         selectedBlocks: [focusedBlock],
