@@ -1,4 +1,5 @@
 import type { BlockDefinition } from '../model/types.js';
+import { escapeHTML, alignStyle } from '../utils/htmlUtils.js';
 
 /* ─── helpers ─── */
 
@@ -537,4 +538,21 @@ export const tableBlock: BlockDefinition<'table'> = {
   },
 
   parseContent() { return undefined; },
+
+  toHTML(block) {
+    const style = alignStyle(block);
+    const tableCells = (block.meta?.cells as string[][] | undefined) || [];
+    const tableRowStyles = (block.meta?.rowStyles as Array<{color?: string; background?: string}> | undefined) || [];
+    const allRows = tableCells.map((row, ri) => {
+      const rs = tableRowStyles[ri] || {};
+      const rowStyle = [
+        rs.color ? `color:${rs.color}` : '',
+        rs.background ? `background:${rs.background}` : '',
+      ].filter(Boolean).join(';');
+      const trStyle = rowStyle ? ` style="${rowStyle}"` : '';
+      const cellsHtml = row.map((cell) => `    <td>${escapeHTML(cell)}</td>`).join('\n');
+      return `  <tr${trStyle}>\n${cellsHtml}\n  </tr>`;
+    }).join('\n');
+    return `<table${style}>\n<tbody>\n${allRows}\n</tbody>\n</table>`;
+  },
 };

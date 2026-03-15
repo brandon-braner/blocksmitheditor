@@ -1,5 +1,6 @@
 import type { BlockDefinition } from '../model/types.js';
 import { renderInlineContent, parseInlineContent } from '../utils/dom.js';
+import { renderInlineToHTML, alignStyle } from '../utils/htmlUtils.js';
 
 export const headingBlock: BlockDefinition<'heading'> = {
   type: 'heading',
@@ -29,5 +30,10 @@ export const headingBlock: BlockDefinition<'heading'> = {
 
   parseContent(element) {
     return parseInlineContent(element);
+  },
+
+  toHTML(block) {
+    const tag = `h${block.props.level}`;
+    return `<${tag}${alignStyle(block)}>${renderInlineToHTML(block.content)}</${tag}>`;
   },
 };

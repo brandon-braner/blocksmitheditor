@@ -1,4 +1,5 @@
 import type { BlockDefinition } from '../model/types.js';
+import { escapeHTML, alignStyle } from '../utils/htmlUtils.js';
 
 export const imageBlock: BlockDefinition<'image'> = {
   type: 'image',
@@ -48,5 +49,15 @@ export const imageBlock: BlockDefinition<'image'> = {
 
   parseContent() {
     return undefined;
+  },
+
+  toHTML(block) {
+    const style = alignStyle(block);
+    const altAttr = block.props.alt ? ` alt="${escapeHTML(block.props.alt)}"` : '';
+    const img = `<img src="${escapeHTML(block.props.url)}"${altAttr}>`;
+    if (block.props.caption) {
+      return `<figure${style}>${img}<figcaption>${escapeHTML(block.props.caption)}</figcaption></figure>`;
+    }
+    return `<figure${style}>${img}</figure>`;
   },
 };

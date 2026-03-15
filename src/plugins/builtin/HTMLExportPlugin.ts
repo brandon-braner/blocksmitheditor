@@ -1,9 +1,34 @@
 import type { EditorPlugin, PluginContext } from '../PluginTypes.js';
-import type { Block, InlineContent, EditorDocument } from '../../model/types.js';
+import type { Block, EditorDocument, BlockType, BlockDefinition } from '../../model/types.js';
+import { renderInlineToHTML, alignStyle } from '../../utils/htmlUtils.js';
+
+// Import all block definitions so we can look up their toHTML methods
+import { paragraphBlock } from '../../blocks/ParagraphBlock.js';
+import { headingBlock } from '../../blocks/HeadingBlock.js';
+import { bulletListBlock } from '../../blocks/BulletListBlock.js';
+import { numberedListBlock } from '../../blocks/NumberedListBlock.js';
+import { codeBlock } from '../../blocks/CodeBlock.js';
+import { quoteBlock } from '../../blocks/QuoteBlock.js';
+import { dividerBlock } from '../../blocks/DividerBlock.js';
+import { imageBlock } from '../../blocks/ImageBlock.js';
+import { tableBlock } from '../../blocks/TableBlock.js';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const BLOCK_DEFS: Record<BlockType, BlockDefinition<any>> = {
+  paragraph: paragraphBlock,
+  heading: headingBlock,
+  'bullet-list': bulletListBlock,
+  'numbered-list': numberedListBlock,
+  code: codeBlock,
+  quote: quoteBlock,
+  divider: dividerBlock,
+  image: imageBlock,
+  table: tableBlock,
+};
 
 /**
  * Exports the editor document to clean, semantic HTML.
- * Supports all built-in block types and inline marks.
+ * Delegates HTML conversion to each block's own `toHTML()` method.
  */
 export class HTMLExportPlugin implements EditorPlugin {
   readonly id = 'html-export';
@@ -23,7 +48,7 @@ export class HTMLExportPlugin implements EditorPlugin {
    * Export the current document as an HTML string.
    * Returns a complete HTML document with embedded styles.
    */
-  exportHTML(title = 'Blocksmith Document'): string {
+  exportHTML(_title = 'Blocksmith Document'): string {
     if (!this.context) throw new Error('HTMLExportPlugin is not initialized');
 
     const doc = this.context.editorState.toDocument();
@@ -78,7 +103,7 @@ ${bodyHTML}
       if (block.type === 'bullet-list') {
         const items: string[] = [];
         while (i < doc.blocks.length && doc.blocks[i].type === 'bullet-list') {
-          items.push(`  <li>${this.renderInline(doc.blocks[i].content)}</li>`);
+          items.push(this.renderBlock(doc.blocks[i]));
           i++;
         }
         parts.push(`<ul>\n${items.join('\n')}\n</ul>`);
@@ -88,7 +113,7 @@ ${bodyHTML}
       if (block.type === 'numbered-list') {
         const items: string[] = [];
         while (i < doc.blocks.length && doc.blocks[i].type === 'numbered-list') {
-          items.push(`  <li>${this.renderInline(doc.blocks[i].content)}</li>`);
+          items.push(this.renderBlock(doc.blocks[i]));
           i++;
         }
         parts.push(`<ol>\n${items.join('\n')}\n</ol>`);
@@ -102,128 +127,19 @@ ${bodyHTML}
     return parts.join('\n');
   }
 
+  /**
+   * Render a single block to HTML by delegating to its block definition's toHTML method.
+   * Falls back to a paragraph if the block type has no toHTML implementation.
+   */
   private renderBlock(block: Block): string {
-    const align = (block.meta?.align as string) || '';
-    const style = align && align !== 'left' ? ` style="text-align: ${align}"` : '';
-
-    switch (block.type) {
-      case 'paragraph':
-        return `<p${style}>${this.renderInline(block.content)}</p>`;
-
-      case 'heading': {
-        const level = (block.props as { level: number }).level || 1;
-        const tag = `h${level}`;
-        return `<${tag}${style}>${this.renderInline(block.content)}</${tag}>`;
-      }
-
-      case 'code': {
-        const lang = (block.props as { language?: string }).language;
-        const text = this.getPlainText(block.content);
-        const langAttr = lang ? ` class="language-${this.escapeHTML(lang)}"` : '';
-        return `<pre${style}><code${langAttr}>${this.escapeHTML(text)}</code></pre>`;
-      }
-
-      case 'quote':
-        return `<blockquote${style}>${this.renderInline(block.content)}</blockquote>`;
-
-      case 'divider':
-        return '<hr>';
-
-      case 'image': {
-        const props = block.props as { url: string; alt?: string; caption?: string };
-        const altAttr = props.alt ? ` alt="${this.escapeHTML(props.alt)}"` : '';
-        const img = `<img src="${this.escapeHTML(props.url)}"${altAttr}>`;
-        if (props.caption) {
-          return `<figure${style}>${img}<figcaption>${this.escapeHTML(props.caption)}</figcaption></figure>`;
-        }
-        return `<figure${style}>${img}</figure>`;
-      }
-
-      case 'table': {
-        const tableCells = (block.meta?.cells as string[][] | undefined) || [];
-        const tableRowStyles = (block.meta?.rowStyles as Array<{color?: string; background?: string}> | undefined) || [];
-        const allRows = tableCells.map((row, ri) => {
-          const rs = tableRowStyles[ri] || {};
-          const rowStyle = [
-            rs.color ? `color:${rs.color}` : '',
-            rs.background ? `background:${rs.background}` : '',
-          ].filter(Boolean).join(';');
-          const trStyle = rowStyle ? ` style="${rowStyle}"` : '';
-          const cellsHtml = row.map((cell) => `    <td>${this.escapeHTML(cell)}</td>`).join('\n');
-          return `  <tr${trStyle}>\n${cellsHtml}\n  </tr>`;
-        }).join('\n');
-        return `<table${style}>\n<tbody>\n${allRows}\n</tbody>\n</table>`;
-      }
-
-      // bullet-list and numbered-list are handled by grouping in renderDocument
-      default:
-        return `<p${style}>${this.renderInline(block.content)}</p>`;
+    const def = BLOCK_DEFS[block.type];
+    if (def?.toHTML) {
+      return def.toHTML(block);
     }
-  }
 
-  private renderInline(content: InlineContent[] | undefined): string {
-    if (!content || content.length === 0) return '';
-
-    return content.map((node) => {
-      if (node.type === 'link') {
-        const children = node.children
-          .map((child) => this.applyMarks(this.escapeHTML(child.text), child.marks))
-          .join('');
-        return `<a href="${this.escapeHTML(node.href)}">${children}</a>`;
-      }
-
-      // TextNode
-      return this.applyMarks(this.escapeHTML(node.text), node.marks);
-    }).join('');
-  }
-
-  private applyMarks(text: string, marks?: string[]): string {
-    if (!marks || marks.length === 0) return text;
-
-    let result = text;
-    for (const mark of marks) {
-      switch (mark) {
-        case 'bold':
-          result = `<strong>${result}</strong>`;
-          break;
-        case 'italic':
-          result = `<em>${result}</em>`;
-          break;
-        case 'code':
-          result = `<code>${result}</code>`;
-          break;
-        case 'strikethrough':
-          result = `<s>${result}</s>`;
-          break;
-        case 'underline':
-          result = `<u>${result}</u>`;
-          break;
-        case 'highlight':
-          result = `<mark>${result}</mark>`;
-          break;
-      }
-    }
-    return result;
-  }
-
-  private getPlainText(content: InlineContent[] | undefined): string {
-    if (!content) return '';
-    return content
-      .map((node) => {
-        if (node.type === 'link') {
-          return node.children.map((c) => c.text).join('');
-        }
-        return node.text;
-      })
-      .join('');
-  }
-
-  private escapeHTML(str: string): string {
-    return str
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    // Fallback for unknown/custom block types without toHTML
+    const style = alignStyle(block);
+    return `<p${style}>${renderInlineToHTML(block.content)}</p>`;
   }
 }
 

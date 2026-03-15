@@ -77,6 +77,8 @@ export interface BlockDefinition<T extends BlockType = BlockType> {
   hasContent: boolean;
   placeholder?: string;
   slashMenuKeywords?: string[];
+  /** Convert a block's JSON data to an HTML string for export. */
+  toHTML?: (block: Block<T>) => string;
 }
 
 // ============================================================

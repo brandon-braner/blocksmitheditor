@@ -20,4 +20,8 @@ export const dividerBlock: BlockDefinition<'divider'> = {
   parseContent() {
     return undefined;
   },
+
+  toHTML() {
+    return '<hr>';
+  },
 };

@@ -1,5 +1,6 @@
 import type { BlockDefinition } from '../model/types.js';
 import { renderInlineContent, parseInlineContent } from '../utils/dom.js';
+import { renderInlineToHTML } from '../utils/htmlUtils.js';
 
 export const bulletListBlock: BlockDefinition<'bullet-list'> = {
   type: 'bullet-list',
@@ -37,5 +38,9 @@ export const bulletListBlock: BlockDefinition<'bullet-list'> = {
   parseContent(element) {
     const content = element.querySelector('.bs-list-content') as HTMLElement;
     return content ? parseInlineContent(content) : [];
+  },
+
+  toHTML(block) {
+    return `  <li>${renderInlineToHTML(block.content)}</li>`;
   },
 };
