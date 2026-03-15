@@ -210,7 +210,7 @@
     window.exportHTML = async function() {
       // Call exportHTML() directly on the editor — no plugin lookup needed
       const html = editor.exportHTML('Blocksmith Document');
-
+      console.log(html);
       // Use the File System Access API for a native "Save As" dialog
       // that guarantees the correct filename and .html extension.
 

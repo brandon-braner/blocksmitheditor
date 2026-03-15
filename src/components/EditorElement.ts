@@ -775,8 +775,8 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   // ============================================================
 
   private handleSelectionChange = (): void => {
-    // Don't dismiss toolbar while AI edit input is active
-    if (this.toolbar.isEditingWithAI()) return;
+    // Don't dismiss toolbar while AI edit input or link input is active
+    if (this.toolbar.isEditingWithAI() || this.toolbar.isEditingLink()) return;
 
     const sel = getShadowSelection(this.shadowRoot!);
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) {

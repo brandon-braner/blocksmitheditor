@@ -201,8 +201,13 @@ export class ToolbarElement {
         }
       }
     } else if (btn.id === 'link') {
-      this.showLinkInput();
-      return; // Don't call onFormat yet
+      // Toggle: if cursor is inside a link, remove it; otherwise show link input
+      if (this.isInsideLink()) {
+        document.execCommand('unlink', false);
+      } else {
+        this.showLinkInput();
+        return; // Don't call onFormat yet
+      }
     } else if (btn.id === 'highlight') {
       this.applyHighlight();
     }
@@ -475,6 +480,30 @@ export class ToolbarElement {
     this.onFormat?.();
   }
 
+  private isInsideLink(): boolean {
+    const sel = getShadowSelection(this.shadowRoot);
+    if (!sel || sel.rangeCount === 0) return false;
+    const range = sel.getRangeAt(0);
+
+    // Check if the common ancestor itself is inside a link
+    let node: Node | null = range.commonAncestorContainer;
+    while (node && node !== this.shadowRoot) {
+      if (node instanceof HTMLAnchorElement) return true;
+      node = node.parentNode;
+    }
+
+    // Check if the selection contains any <a> elements
+    const container = range.commonAncestorContainer;
+    if (container instanceof HTMLElement) {
+      const anchors = container.querySelectorAll('a');
+      for (const a of anchors) {
+        if (range.intersectsNode(a)) return true;
+      }
+    }
+
+    return false;
+  }
+
   // ============================================================
   // AI ACTIONS
   // ============================================================
@@ -685,6 +714,10 @@ export class ToolbarElement {
 
   isEditingWithAI(): boolean {
     return this.aiEditInput !== null;
+  }
+
+  isEditingLink(): boolean {
+    return this.linkInput !== null;
   }
 
   isVisible(): boolean {
