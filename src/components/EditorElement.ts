@@ -230,6 +230,17 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     // Selection change for toolbar
     document.addEventListener('selectionchange', this.handleSelectionChange);
 
+    // Click on empty editor space → focus last block
+    this.editorContainer.addEventListener('click', (e) => {
+      if (e.target === this.editorContainer) {
+        const blocks = this.editorState.getBlocks();
+        if (blocks.length > 0) {
+          const lastBlock = blocks[blocks.length - 1];
+          this.focusBlock(lastBlock.id, 'end');
+        }
+      }
+    });
+
     // Keyboard shortcuts at editor level
     this.shadowRoot!.addEventListener('keydown', (e) => {
       this.handleGlobalKeyDown(e as KeyboardEvent);

@@ -15,7 +15,10 @@
   --bs-menu-radius: 8px;
   --bs-block-spacing: 4px;
 
-  display: block;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   font-family: var(--bs-font-family);
   font-size: var(--bs-font-size);
   line-height: var(--bs-line-height);
@@ -29,8 +32,10 @@
 
 .bs-editor {
   max-width: 100%;
+  flex: 1;
   padding: 2rem 1rem;
   outline: none;
+  cursor: text;
 }
 
 /* Block wrapper */
