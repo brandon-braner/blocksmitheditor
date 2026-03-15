@@ -322,6 +322,13 @@ code:not(.bs-code-block code) {
   font-size: 0.9em;
 }
 s, del { text-decoration: line-through; }
+u { text-decoration: underline; }
+mark {
+  background: #fff3bf;
+  color: inherit;
+  padding: 1px 2px;
+  border-radius: 2px;
+}
 
 /* Slash menu */
 .bs-slash-menu {
@@ -373,37 +380,171 @@ s, del { text-decoration: line-through; }
 .bs-toolbar {
   position: fixed;
   display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 6px;
+  z-index: 1001;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  min-width: 240px;
+  max-width: 320px;
+}
+
+.bs-toolbar-row {
+  display: flex;
   align-items: center;
   gap: 2px;
-  background: #1a1a1a;
-  border-radius: 6px;
-  padding: 4px;
-  z-index: 1001;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  flex-wrap: wrap;
+  padding: 2px 0;
+}
+
+.bs-toolbar-ai-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.bs-toolbar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 2px;
+}
+
+.bs-toolbar-separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.12);
+  margin: 0 3px;
 }
 
 .bs-toolbar-btn {
-  width: 28px;
-  height: 28px;
+  min-width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: transparent;
   border: none;
-  color: #e5e7eb;
-  border-radius: 4px;
+  color: #d4d4d4;
+  border-radius: 5px;
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
-  transition: background 0.1s;
+  font-weight: 500;
+  transition: background 0.12s, color 0.12s;
+  padding: 0 5px;
+  font-family: inherit;
 }
 
 .bs-toolbar-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
 }
 
 .bs-toolbar-btn.active {
-  color: var(--bs-accent-color);
+  background: rgba(255, 255, 255, 0.18);
+  color: #60a5fa;
+}
+
+.bs-toolbar-btn-color span {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+/* AI action items in toolbar */
+.bs-toolbar-ai-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 13px;
+  color: #c4c4c4;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.bs-toolbar-ai-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.bs-toolbar-ai-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  width: 20px;
+  text-align: center;
+}
+
+/* Color popover */
+.bs-color-popover {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bs-color-popover-label {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0 4px 6px;
+}
+
+.bs-color-grid {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.bs-color-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: border-color 0.12s, transform 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.bs-color-swatch:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.15);
+}
+
+/* Link input row */
+.bs-toolbar-link-row {
+  padding: 4px 2px;
+}
+
+.bs-toolbar-link-input {
+  width: 100%;
+  padding: 6px 10px;
+  background: #2a2a2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+}
+
+.bs-toolbar-link-input:focus {
+  border-color: #60a5fa;
+}
+
+.bs-toolbar-link-input::placeholder {
+  color: #666;
 }
 
 /* AI menu */

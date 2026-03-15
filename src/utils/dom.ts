@@ -46,6 +46,8 @@ function collectMarks(el: HTMLElement): InlineMark[] {
   if (tag === 'i' || tag === 'em') marks.push('italic');
   if (tag === 'code') marks.push('code');
   if (tag === 's' || tag === 'del' || tag === 'strike') marks.push('strikethrough');
+  if (tag === 'u') marks.push('underline');
+  if (tag === 'mark') marks.push('highlight');
 
   return marks;
 }
@@ -80,6 +82,12 @@ function wrapWithMarks(text: string, marks?: InlineMark[]): string {
       case 'strikethrough':
         html = `<s>${html}</s>`;
         break;
+      case 'underline':
+        html = `<u>${html}</u>`;
+        break;
+      case 'highlight':
+        html = `<mark>${html}</mark>`;
+        break;
     }
   }
 
@@ -92,8 +100,23 @@ function escapeHtml(text: string): string {
   return div.innerHTML;
 }
 
-export function getCaretPosition(element: HTMLElement): number {
-  const sel = window.getSelection();
+/**
+ * Get the current selection, preferring the ShadowRoot's selection
+ * (Chromium-only API) with fallback to document.getSelection().
+ */
+export function getShadowSelection(root?: ShadowRoot): Selection | null {
+  if (root) {
+    // Chromium exposes getSelection() on ShadowRoot
+    const sr = root as ShadowRoot & { getSelection?: () => Selection | null };
+    if (typeof sr.getSelection === 'function') {
+      return sr.getSelection();
+    }
+  }
+  return document.getSelection();
+}
+
+export function getCaretPosition(element: HTMLElement, root?: ShadowRoot): number {
+  const sel = getShadowSelection(root);
   if (!sel || sel.rangeCount === 0) return 0;
 
   const range = sel.getRangeAt(0);
@@ -103,8 +126,8 @@ export function getCaretPosition(element: HTMLElement): number {
   return preRange.toString().length;
 }
 
-export function setCaretPosition(element: HTMLElement, position: 'start' | 'end' | number): void {
-  const sel = window.getSelection();
+export function setCaretPosition(element: HTMLElement, position: 'start' | 'end' | number, root?: ShadowRoot): void {
+  const sel = getShadowSelection(root);
   if (!sel) return;
 
   const range = document.createRange();
@@ -138,7 +161,7 @@ export function setCaretPosition(element: HTMLElement, position: 'start' | 'end'
   sel.addRange(range);
 }
 
-export function getSelectedText(): string {
-  const sel = window.getSelection();
+export function getSelectedText(root?: ShadowRoot): string {
+  const sel = getShadowSelection(root);
   return sel ? sel.toString() : '';
 }

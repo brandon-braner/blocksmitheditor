@@ -18,7 +18,7 @@ import {
   MoveBlockCommand,
 } from '../core/commands.js';
 import { createBlock } from '../model/Block.js';
-import { getCaretPosition, setCaretPosition, getSelectedText } from '../utils/dom.js';
+import { getCaretPosition, setCaretPosition, getSelectedText, getShadowSelection } from '../utils/dom.js';
 import { matchMarkdownShortcut } from '../formatting/MarkdownShortcuts.js';
 import { debounce, type DebouncedFn } from '../utils/debounce.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
@@ -119,6 +119,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     // Initialize menus
     this.slashMenu = new SlashMenuElement(shadow);
     this.toolbar = new ToolbarElement(shadow);
+    this.toolbar.setAIManager(this.aiManager);
     this.aiMenu = new AIMenuElement(shadow, this.aiManager);
 
     this.initFromConfig();
@@ -425,7 +426,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     blockId: string,
     blockType: BlockType
   ): void {
-    const caretPos = getCaretPosition(editable);
+    const caretPos = getCaretPosition(editable, this.shadowRoot!);
     const textLen = editable.textContent?.length || 0;
     const isCode = blockType === 'code';
 
@@ -434,7 +435,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       e.preventDefault();
       if (e.shiftKey) {
         // Remove leading tab or 2 spaces from current line
-        const sel = window.getSelection();
+        const sel = getShadowSelection(this.shadowRoot!);
         if (sel && sel.rangeCount > 0) {
           const range = sel.getRangeAt(0);
           const node = range.startContainer;
@@ -714,7 +715,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   // ============================================================
 
   private handleSelectionChange = (): void => {
-    const sel = window.getSelection();
+    const sel = getShadowSelection(this.shadowRoot!);
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
       this.toolbar.hide();
       return;
@@ -728,13 +729,35 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       return;
     }
 
+    // Build AI context for the toolbar
+    const focusedBlock = this.focusedBlockId
+      ? this.editorState.getBlock(this.focusedBlockId)
+      : null;
+
+    let aiContext: AIActionContext | undefined;
+    if (focusedBlock && this.aiManager.getProvider()) {
+      aiContext = {
+        selectedText: getSelectedText(this.shadowRoot!),
+        selectedBlocks: [focusedBlock],
+        cursorBlockId: focusedBlock.id,
+        editorState: this.editorState,
+        commandManager: this.commandManager,
+      };
+    }
+
     const rect = range.getBoundingClientRect();
-    this.toolbar.show(rect.left + rect.width / 2 - 70, rect.top, () => {
-      // Format applied — save content of focused block
-      if (this.focusedBlockId) {
-        this.saveBlockContent(this.focusedBlockId);
-      }
-    });
+    this.toolbar.show(
+      rect.left + rect.width / 2 - 120,
+      rect.top,
+      () => {
+        // Format applied — save content of focused block
+        if (this.focusedBlockId) {
+          this.saveBlockContent(this.focusedBlockId);
+        }
+      },
+      aiContext,
+      rect.bottom
+    );
   };
 
   // ============================================================
@@ -770,6 +793,13 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       if (this.focusedBlockId) this.saveBlockContent(this.focusedBlockId);
     }
 
+    // Underline
+    if (mod && e.key === 'u') {
+      e.preventDefault();
+      document.execCommand('underline', false);
+      if (this.focusedBlockId) this.saveBlockContent(this.focusedBlockId);
+    }
+
     // AI menu (Ctrl+J)
     if (mod && e.key === 'j') {
       e.preventDefault();
@@ -796,7 +826,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     const rect = wrapper.getBoundingClientRect();
 
     const context: AIActionContext = {
-      selectedText: getSelectedText(),
+      selectedText: getSelectedText(this.shadowRoot!),
       selectedBlocks: focusedBlock ? [focusedBlock] : [],
       cursorBlockId: focusedBlock.id,
       editorState: this.editorState,

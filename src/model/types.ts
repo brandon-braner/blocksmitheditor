@@ -12,7 +12,7 @@ export type BlockType =
   | 'divider'
   | 'image';
 
-export type InlineMark = 'bold' | 'italic' | 'code' | 'strikethrough';
+export type InlineMark = 'bold' | 'italic' | 'code' | 'strikethrough' | 'underline' | 'highlight';
 
 export interface TextNode {
   type: 'text';
