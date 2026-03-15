@@ -2,6 +2,8 @@
 
 Blocksmith plugins are the editor's main extension point. A plugin can listen to editor events, read and update document state, execute commands, and expose its own public methods through `editor.getPlugin()`.
 
+For DOM and plugin event hooks, see [docs/events.md](/Users/brandonbraner/code/blocksmith/blocksmith_editor/docs/events.md).
+
 ## Plugin interface
 
 Every plugin must implement the `EditorPlugin` interface:

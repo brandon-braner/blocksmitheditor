@@ -697,7 +697,38 @@ mark {
 
 /* Drag & drop */
 .bs-block.dragging {
-  opacity: 0.4;
+  opacity: 0.35;
+  transform: scale(0.98);
+  transition: opacity 0.2s, transform 0.2s;
+}
+
+.bs-block.drag-over-top {
+  box-shadow: inset 0 3px 0 0 var(--bs-accent-color);
+}
+
+.bs-block.drag-over-bottom {
+  box-shadow: inset 0 -3px 0 0 var(--bs-accent-color);
+}
+
+.bs-block.drag-over-top::before,
+.bs-block.drag-over-bottom::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--bs-accent-color);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.bs-block.drag-over-top::before {
+  top: -2px;
+}
+
+.bs-block.drag-over-bottom::after {
+  bottom: -2px;
 }
 
 .bs-drop-indicator {

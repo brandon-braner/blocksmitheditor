@@ -352,8 +352,10 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     }) as EventListener);
 
     // Drag target
-    wrapper.addEventListener('dragover', (e) => this.handleDragOver(e));
-    wrapper.addEventListener('drop', (e) => this.handleDrop(e, block.id));
+    wrapper.addEventListener('dragover', (e) => this.handleDragOver(e, wrapper));
+    wrapper.addEventListener('dragleave', (e) => this.handleDragLeave(e, wrapper));
+    wrapper.addEventListener('drop', (e) => this.handleDrop(e, block.id, wrapper));
+    handle.addEventListener('dragend', () => this.clearDrag());
 
     // Insert at correct position
     const children = this.editorContainer.children;
@@ -905,6 +907,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   // ============================================================
 
   private draggedBlockId: string | null = null;
+  private dropPosition: 'top' | 'bottom' | null = null;
 
   private handleDragStart(e: DragEvent, blockId: string): void {
     this.draggedBlockId = blockId;
@@ -913,12 +916,46 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     if (wrapper) wrapper.classList.add('dragging');
   }
 
-  private handleDragOver(e: DragEvent): void {
+  private handleDragOver(e: DragEvent, wrapper: HTMLElement): void {
     e.preventDefault();
     e.dataTransfer!.dropEffect = 'move';
+
+    // Don't show indicator on the dragged block itself
+    const blockId = wrapper.getAttribute('data-block-id');
+    if (blockId === this.draggedBlockId) return;
+
+    // Calculate whether cursor is in top or bottom half
+    const rect = wrapper.getBoundingClientRect();
+    const midpoint = rect.top + rect.height / 2;
+    const isTopHalf = e.clientY < midpoint;
+
+    // Clear previous indicator on this wrapper
+    wrapper.classList.remove('drag-over-top', 'drag-over-bottom');
+
+    if (isTopHalf) {
+      wrapper.classList.add('drag-over-top');
+      this.dropPosition = 'top';
+    } else {
+      wrapper.classList.add('drag-over-bottom');
+      this.dropPosition = 'bottom';
+    }
+
+    // Clear indicators on other blocks
+    this.blockElements.forEach((el, id) => {
+      if (id !== blockId) {
+        el.classList.remove('drag-over-top', 'drag-over-bottom');
+      }
+    });
   }
 
-  private handleDrop(e: DragEvent, targetBlockId: string): void {
+  private handleDragLeave(e: DragEvent, wrapper: HTMLElement): void {
+    // Only remove if we're truly leaving (not entering a child)
+    const related = e.relatedTarget as Node | null;
+    if (related && wrapper.contains(related)) return;
+    wrapper.classList.remove('drag-over-top', 'drag-over-bottom');
+  }
+
+  private handleDrop(e: DragEvent, targetBlockId: string, wrapper: HTMLElement): void {
     e.preventDefault();
 
     if (!this.draggedBlockId || this.draggedBlockId === targetBlockId) {
@@ -926,7 +963,24 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       return;
     }
 
-    const newIndex = this.editorState.getBlockIndex(targetBlockId);
+    const targetIndex = this.editorState.getBlockIndex(targetBlockId);
+    const draggedIndex = this.editorState.getBlockIndex(this.draggedBlockId);
+
+    // Calculate new index based on drop position (top = before target, bottom = after target)
+    let newIndex: number;
+    if (this.dropPosition === 'top') {
+      newIndex = targetIndex;
+    } else {
+      newIndex = targetIndex + 1;
+    }
+
+    // Adjust if we're moving downward (removing from above shifts indices down)
+    if (draggedIndex < newIndex) {
+      newIndex--;
+    }
+
+    wrapper.classList.remove('drag-over-top', 'drag-over-bottom');
+
     this.commandManager.execute(
       new MoveBlockCommand(this.editorState, this.draggedBlockId, newIndex)
     );
@@ -941,6 +995,11 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       if (wrapper) wrapper.classList.remove('dragging');
       this.draggedBlockId = null;
     }
+    this.dropPosition = null;
+    // Remove all drop indicators
+    this.blockElements.forEach((el) => {
+      el.classList.remove('drag-over-top', 'drag-over-bottom');
+    });
   }
 
   // ============================================================
