@@ -15,14 +15,16 @@ export function createBlock<T extends BlockType>(
     quote: () => ({}),
     divider: () => ({}),
     image: () => ({ url: '' }),
+    table: () => ({ rows: 3, cols: 3 }),
   };
 
   const defaults = defaultPropsMap[type]() as BlockPropsMap[T];
+  const noContent = type === 'divider' || type === 'table';
 
   return {
     id: generateId(),
     type,
     props: { ...defaults, ...props } as BlockPropsMap[T],
-    content: type === 'divider' ? undefined : (content ?? [{ type: 'text', text: '', marks: [] }]),
+    content: noContent ? undefined : (content ?? [{ type: 'text', text: '', marks: [] }]),
   };
 }

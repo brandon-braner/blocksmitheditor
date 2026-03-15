@@ -34,6 +34,7 @@ import { codeBlock } from '../blocks/CodeBlock.js';
 import { quoteBlock } from '../blocks/QuoteBlock.js';
 import { dividerBlock } from '../blocks/DividerBlock.js';
 import { imageBlock } from '../blocks/ImageBlock.js';
+import { tableBlock } from '../blocks/TableBlock.js';
 
 import { writeAction } from '../ai/actions/WriteAction.js';
 import { rewriteAction } from '../ai/actions/RewriteAction.js';
@@ -129,6 +130,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.blockRegistry.register(quoteBlock);
     this.blockRegistry.register(dividerBlock);
     this.blockRegistry.register(imageBlock);
+    this.blockRegistry.register(tableBlock);
 
     // Register built-in AI actions
     this.aiManager.registerAction(writeAction);
@@ -320,6 +322,10 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     handle.textContent = '⠿';
     handle.setAttribute('draggable', 'true');
     handle.addEventListener('dragstart', (e) => this.handleDragStart(e, block.id));
+    handle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.showBlockContextMenu(handle, block.id);
+    });
     wrapper.appendChild(handle);
 
     // Content
@@ -349,6 +355,22 @@ export class EditorElement extends HTMLElement implements EditorInstance {
         props: { ...block.props, language: e.detail.language },
       });
       this.suppressRerender = false;
+    }) as EventListener);
+
+    // Listen for table updates
+    wrapper.addEventListener('bs-table-update', ((e: CustomEvent) => {
+      this.suppressRerender = true;
+      const { rows, cols, cells, rowStyles, colWidths, colStyles } = e.detail;
+      this.editorState.updateBlock(block.id, {
+        props: { rows, cols } as unknown as Block['props'],
+        meta: { ...block.meta, cells, rowStyles, colWidths, colStyles },
+      });
+      this.suppressRerender = false;
+    }) as EventListener);
+
+    // Listen for block delete (e.g. table delete button)
+    wrapper.addEventListener('bs-block-delete', (() => {
+      this.editorState.removeBlock(block.id);
     }) as EventListener);
 
     // Drag target
@@ -424,6 +446,9 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     }
     if (blockType === 'code') {
       return container.querySelector('code');
+    }
+    if (blockType === 'table') {
+      return null; // Table cells handle their own editing
     }
     return container.querySelector('[contenteditable="true"]');
   }
@@ -755,7 +780,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       content: [{ type: 'text', text: '', marks: [] }],
     });
 
-    if (def.type === 'divider' || def.type === 'image') {
+    if (def.type === 'divider' || def.type === 'image' || def.type === 'table') {
       this.commandManager.execute(
         new ChangeBlockTypeCommand(this.editorState, blockId, def.type, def.defaultProps())
       );
@@ -908,6 +933,48 @@ export class EditorElement extends HTMLElement implements EditorInstance {
 
   private draggedBlockId: string | null = null;
   private dropPosition: 'top' | 'bottom' | null = null;
+
+  /* ── Block context menu (shown on drag handle click) ── */
+
+  private showBlockContextMenu(anchor: HTMLElement, blockId: string): void {
+    // Remove any existing context menu
+    this.shadowRoot!.querySelector('.bs-block-context-menu')?.remove();
+
+    const wrapper = anchor.closest('.bs-block') as HTMLElement;
+    if (!wrapper) return;
+
+    const menu = document.createElement('div');
+    menu.className = 'bs-block-context-menu';
+
+    // Position relative to the wrapper (which has position: relative)
+    menu.style.position = 'absolute';
+    menu.style.left = `${anchor.offsetLeft + anchor.offsetWidth + 4}px`;
+    menu.style.top = `${anchor.offsetTop}px`;
+    menu.style.zIndex = '1020';
+
+    // Delete option
+    const deleteItem = document.createElement('button');
+    deleteItem.className = 'bs-block-context-item bs-block-context-delete';
+    deleteItem.textContent = '🗑 Delete';
+    deleteItem.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      menu.remove();
+      this.editorState.removeBlock(blockId);
+    });
+    menu.appendChild(deleteItem);
+
+    wrapper.appendChild(menu);
+
+    // Dismiss on outside click
+    const dismiss = (e: MouseEvent) => {
+      if (!menu.contains(e.target as Node)) {
+        menu.remove();
+        document.removeEventListener('mousedown', dismiss);
+      }
+    };
+    setTimeout(() => document.addEventListener('mousedown', dismiss), 0);
+  }
 
   private handleDragStart(e: DragEvent, blockId: string): void {
     this.draggedBlockId = blockId;

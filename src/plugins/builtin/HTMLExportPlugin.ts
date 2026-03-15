@@ -139,6 +139,22 @@ ${bodyHTML}
         return `<figure${style}>${img}</figure>`;
       }
 
+      case 'table': {
+        const tableCells = (block.meta?.cells as string[][] | undefined) || [];
+        const tableRowStyles = (block.meta?.rowStyles as Array<{color?: string; background?: string}> | undefined) || [];
+        const allRows = tableCells.map((row, ri) => {
+          const rs = tableRowStyles[ri] || {};
+          const rowStyle = [
+            rs.color ? `color:${rs.color}` : '',
+            rs.background ? `background:${rs.background}` : '',
+          ].filter(Boolean).join(';');
+          const trStyle = rowStyle ? ` style="${rowStyle}"` : '';
+          const cellsHtml = row.map((cell) => `    <td>${this.escapeHTML(cell)}</td>`).join('\n');
+          return `  <tr${trStyle}>\n${cellsHtml}\n  </tr>`;
+        }).join('\n');
+        return `<table${style}>\n<tbody>\n${allRows}\n</tbody>\n</table>`;
+      }
+
       // bullet-list and numbered-list are handled by grouping in renderDocument
       default:
         return `<p${style}>${this.renderInline(block.content)}</p>`;
@@ -261,4 +277,7 @@ const DEFAULT_STYLES = `
   a { color: #2563eb; text-decoration: underline; }
   mark { background: #fef08a; padding: 1px 3px; border-radius: 2px; }
   strong { font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+  table td, table th { border: 1px solid #e5e7eb; padding: 8px 12px; text-align: left; }
+  table tr:first-child td { font-weight: 600; background: #f9fafb; }
 `.trim();

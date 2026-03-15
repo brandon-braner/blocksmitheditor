@@ -790,3 +790,352 @@ mark {
 .bs-align-option svg {
   flex-shrink: 0;
 }
+
+/* Table block */
+.bs-table-wrapper {
+  border-radius: 8px;
+  overflow: visible;
+  padding-left: 12px;   /* space for row handles */
+  padding-top: 8px;     /* space for column handles */
+  padding-right: 18px;  /* space for add-column handle */
+  padding-bottom: 18px; /* space for add-row handle */
+}
+
+.bs-table-container {
+  position: relative;
+}
+
+/* ── The table itself ── */
+.bs-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 6px;
+}
+
+.bs-table td {
+  border: 1px solid var(--bs-border-color);
+  padding: 8px 12px;
+  min-width: 60px;
+  font-size: var(--bs-font-size);
+  line-height: var(--bs-line-height);
+  vertical-align: top;
+  outline: none;
+  word-break: break-word;
+  transition: background 0.12s;
+}
+
+.bs-table td:focus {
+  background: rgba(37, 99, 235, 0.06);
+  box-shadow: inset 0 0 0 2px var(--bs-accent-color);
+}
+
+.bs-table tr:first-child td {
+  font-weight: 600;
+  background: var(--bs-hover-bg);
+}
+
+/* ── Row handles (abs-positioned, left of table) ── */
+.bs-table-row-handles {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-table-row-handle {
+  position: absolute;
+  left: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.bs-table-row-handle-icon {
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 16px;
+  color: #888;
+  line-height: 1;
+}
+
+.bs-table-container:hover .bs-table-row-handle-icon {
+  opacity: 0.5;
+}
+
+.bs-table-row-handle:hover .bs-table-row-handle-icon {
+  opacity: 1;
+  color: var(--bs-accent-color);
+}
+
+/* ── Column handles (abs-positioned, above table) ── */
+.bs-table-col-handles {
+  position: absolute;
+  display: flex;
+  height: 20px;
+}
+
+.bs-table-col-handle {
+  position: absolute;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  user-select: none;
+}
+
+.bs-table-col-handle-icon {
+  opacity: 0;
+  transition: opacity 0.15s;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #888;
+  line-height: 20px;
+}
+
+.bs-table-container:hover .bs-table-col-handle-icon {
+  opacity: 0.5;
+}
+
+.bs-table-col-handle:hover .bs-table-col-handle-icon {
+  opacity: 1;
+  color: var(--bs-accent-color);
+}
+
+/* ── Column resizers (abs-positioned, vertical bars between columns) ── */
+.bs-table-col-resizers {
+  position: absolute;
+  pointer-events: none;
+}
+
+.bs-table-col-resizer {
+  position: absolute;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.bs-table-col-resizer:hover,
+.bs-table-col-resizer.active {
+  background: var(--bs-accent-color);
+  border-radius: 3px;
+}
+
+/* ── Right edge handle (add column) ── */
+.bs-table-handle-right {
+  position: absolute;
+  top: 0;
+  right: -20px;
+  width: 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s, background 0.18s;
+  border-radius: 0 6px 6px 0;
+  background: transparent;
+}
+
+.bs-table-container:hover .bs-table-handle-right {
+  opacity: 1;
+}
+
+.bs-table-handle-right:hover {
+  background: var(--bs-accent-color);
+}
+
+.bs-table-handle-right:hover .bs-table-handle-icon {
+  color: #fff;
+}
+
+/* ── Bottom edge handle (add row) ── */
+.bs-table-handle-bottom {
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s, background 0.18s;
+  border-radius: 0 0 6px 6px;
+  background: transparent;
+}
+
+.bs-table-container:hover .bs-table-handle-bottom {
+  opacity: 1;
+}
+
+.bs-table-handle-bottom:hover {
+  background: var(--bs-accent-color);
+}
+
+.bs-table-handle-bottom:hover .bs-table-handle-icon {
+  color: #fff;
+}
+
+/* Shared add-handle icon */
+.bs-table-handle-icon {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--bs-placeholder-color);
+  transition: color 0.12s;
+  user-select: none;
+}
+
+/* ── Drag indicators ── */
+.bs-drag-over-row {
+  outline: 2px solid var(--bs-accent-color);
+  outline-offset: -2px;
+}
+
+tr.dragging {
+  opacity: 0.4;
+}
+
+.bs-table-col-handle.dragging {
+  opacity: 0.4;
+}
+
+/* ── Row options popup ── */
+.bs-table-row-popup {
+  position: absolute;
+  z-index: 1010;
+  background: #1e1e1e;
+  border-radius: 10px;
+  padding: 10px 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  min-width: 180px;
+  animation: bs-popup-in 0.12s ease-out;
+}
+
+@keyframes bs-popup-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.bs-table-popup-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+}
+
+.bs-table-popup-grid {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.bs-table-popup-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.12s, transform 0.12s;
+}
+
+.bs-table-popup-swatch:hover {
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.18);
+}
+
+.bs-table-popup-swatch.active {
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 1px #60a5fa;
+}
+
+.bs-table-popup-delete {
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #ef4444;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.bs-table-popup-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+}
+
+/* ── Delete table button (top-left corner) ── */
+.bs-table-delete-btn {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s;
+  border-radius: 6px;
+  background: #1e1e1e;
+  border: 1px solid var(--bs-border-color);
+  user-select: none;
+  z-index: 10;
+}
+
+.bs-table-container:hover .bs-table-delete-btn {
+  opacity: 0.6;
+}
+
+.bs-table-delete-btn:hover {
+  opacity: 1 !important;
+  background: #fee2e2;
+  border-color: #ef4444;
+}
+
+/* ── Block context menu (drag handle click) ── */
+.bs-block-context-menu {
+  min-width: 140px;
+  padding: 4px;
+  background: #1e1e1e;
+  border: 1px solid var(--bs-border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.35);
+}
+
+.bs-block-context-item {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--bs-text-color);
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+}
+
+.bs-block-context-delete {
+  color: #ef4444;
+}
+
+.bs-block-context-delete:hover {
+  background: rgba(239, 68, 68, 0.15);
+}

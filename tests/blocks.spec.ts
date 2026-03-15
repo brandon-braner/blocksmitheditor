@@ -370,3 +370,66 @@ test.describe('Image Block', () => {
     await expect(placeholder).toHaveText('Click to add an image URL');
   });
 });
+
+// ============================================================
+// TABLE BLOCK
+// ============================================================
+
+test.describe('Table Block', () => {
+  test('created via slash command /table', async ({ page }) => {
+    await focusBlockAt(page, 0);
+    await typeSlashCommand(page, 'table');
+
+    const block = blockAt(page, 0);
+    await expect(block).toHaveAttribute('data-block-type', 'table');
+    await expect(block.locator('.bs-table-wrapper')).toBeVisible();
+  });
+
+  test('default table has 3 rows and 3 columns', async ({ page }) => {
+    await focusBlockAt(page, 0);
+    await typeSlashCommand(page, 'table');
+
+    const block = blockAt(page, 0);
+    const rows = block.locator('.bs-table tr');
+    await expect(rows).toHaveCount(3);
+
+    const cells = block.locator('.bs-table td');
+    await expect(cells).toHaveCount(9);
+  });
+
+  test('can type text into a cell', async ({ page }) => {
+    await focusBlockAt(page, 0);
+    await typeSlashCommand(page, 'table');
+
+    const firstCell = blockAt(page, 0).locator('.bs-table td').first();
+    await firstCell.click();
+    await firstCell.pressSequentially('Hello');
+    await expect(firstCell).toHaveText('Hello');
+  });
+
+  test('right edge handle adds a new column', async ({ page }) => {
+    await focusBlockAt(page, 0);
+    await typeSlashCommand(page, 'table');
+
+    const block = blockAt(page, 0);
+    const handle = block.locator('.bs-table-handle-right');
+    await handle.click({ force: true });
+
+    // Should now have 4 columns × 3 rows = 12 cells
+    const cells = block.locator('.bs-table td');
+    await expect(cells).toHaveCount(12);
+  });
+
+  test('bottom edge handle adds a new row', async ({ page }) => {
+    await focusBlockAt(page, 0);
+    await typeSlashCommand(page, 'table');
+
+    const block = blockAt(page, 0);
+    const handle = block.locator('.bs-table-handle-bottom');
+    await handle.click({ force: true });
+
+    // Should now have 4 rows
+    const rows = block.locator('.bs-table tbody tr');
+    await expect(rows).toHaveCount(4);
+  });
+});

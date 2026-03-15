@@ -12,7 +12,8 @@ export type BlockType =
   | 'code'
   | 'quote'
   | 'divider'
-  | 'image';
+  | 'image'
+  | 'table';
 
 export type InlineMark = 'bold' | 'italic' | 'code' | 'strikethrough' | 'underline' | 'highlight';
 
@@ -39,6 +40,7 @@ export interface BlockPropsMap {
   quote: Record<string, never>;
   divider: Record<string, never>;
   image: { url: string; alt?: string; caption?: string };
+  table: { rows: number; cols: number };
 }
 
 export interface Block<T extends BlockType = BlockType> {
