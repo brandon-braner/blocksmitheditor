@@ -103,25 +103,28 @@ ${bodyHTML}
   }
 
   private renderBlock(block: Block): string {
+    const align = (block.meta?.align as string) || '';
+    const style = align && align !== 'left' ? ` style="text-align: ${align}"` : '';
+
     switch (block.type) {
       case 'paragraph':
-        return `<p>${this.renderInline(block.content)}</p>`;
+        return `<p${style}>${this.renderInline(block.content)}</p>`;
 
       case 'heading': {
         const level = (block.props as { level: number }).level || 1;
         const tag = `h${level}`;
-        return `<${tag}>${this.renderInline(block.content)}</${tag}>`;
+        return `<${tag}${style}>${this.renderInline(block.content)}</${tag}>`;
       }
 
       case 'code': {
         const lang = (block.props as { language?: string }).language;
         const text = this.getPlainText(block.content);
         const langAttr = lang ? ` class="language-${this.escapeHTML(lang)}"` : '';
-        return `<pre><code${langAttr}>${this.escapeHTML(text)}</code></pre>`;
+        return `<pre${style}><code${langAttr}>${this.escapeHTML(text)}</code></pre>`;
       }
 
       case 'quote':
-        return `<blockquote>${this.renderInline(block.content)}</blockquote>`;
+        return `<blockquote${style}>${this.renderInline(block.content)}</blockquote>`;
 
       case 'divider':
         return '<hr>';
@@ -131,14 +134,14 @@ ${bodyHTML}
         const altAttr = props.alt ? ` alt="${this.escapeHTML(props.alt)}"` : '';
         const img = `<img src="${this.escapeHTML(props.url)}"${altAttr}>`;
         if (props.caption) {
-          return `<figure>${img}<figcaption>${this.escapeHTML(props.caption)}</figcaption></figure>`;
+          return `<figure${style}>${img}<figcaption>${this.escapeHTML(props.caption)}</figcaption></figure>`;
         }
-        return `<figure>${img}</figure>`;
+        return `<figure${style}>${img}</figure>`;
       }
 
       // bullet-list and numbered-list are handled by grouping in renderDocument
       default:
-        return `<p>${this.renderInline(block.content)}</p>`;
+        return `<p${style}>${this.renderInline(block.content)}</p>`;
     }
   }
 

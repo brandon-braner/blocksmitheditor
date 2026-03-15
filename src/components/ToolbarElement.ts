@@ -68,11 +68,13 @@ const AI_MENU_ITEMS: AIMenuItem[] = [
 export class ToolbarElement {
   private element: HTMLDivElement;
   private colorPopover: HTMLDivElement | null = null;
+  private alignPopover: HTMLDivElement | null = null;
   private linkInput: HTMLDivElement | null = null;
   private onFormat: (() => void) | null = null;
   private aiManager: AIManager | null = null;
   private aiContext: AIActionContext | null = null;
   private savedRange: Range | null = null;
+  private focusedBlockId: string | null = null;
 
   constructor(private shadowRoot: ShadowRoot) {
     this.element = document.createElement('div');
@@ -126,6 +128,21 @@ export class ToolbarElement {
       });
       formatRow.appendChild(button);
     }
+
+    // Separator before alignment
+    formatRow.appendChild(this.createSeparator());
+
+    // Alignment dropdown trigger (single button, opens popover)
+    const alignBtn = document.createElement('button');
+    alignBtn.className = 'bs-toolbar-btn bs-toolbar-btn-align';
+    alignBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="3.5" x2="14" y2="3.5"/><line x1="2" y1="7" x2="10" y2="7"/><line x1="2" y1="10.5" x2="14" y2="10.5"/><line x1="2" y1="14" x2="10" y2="14"/></svg>';
+    alignBtn.title = 'Text alignment';
+    alignBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.toggleAlignPopover();
+    });
+    formatRow.appendChild(alignBtn);
 
     this.element.appendChild(formatRow);
 
@@ -190,6 +207,68 @@ export class ToolbarElement {
       this.applyHighlight();
     }
     this.onFormat?.();
+  }
+
+  private handleAlignClick(align: string): void {
+    this.hideAlignPopover();
+    this.element.dispatchEvent(
+      new CustomEvent('bs-align', {
+        bubbles: true,
+        composed: true,
+        detail: { align, blockId: this.focusedBlockId },
+      })
+    );
+  }
+
+  // ============================================================
+  // ALIGNMENT POPOVER
+  // ============================================================
+
+  private toggleAlignPopover(): void {
+    if (this.alignPopover) {
+      this.hideAlignPopover();
+      return;
+    }
+
+    this.alignPopover = document.createElement('div');
+    this.alignPopover.className = 'bs-align-popover';
+
+    const label = document.createElement('div');
+    label.className = 'bs-color-popover-label';
+    label.textContent = 'Alignment';
+    this.alignPopover.appendChild(label);
+
+    const options: { svg: string; title: string; value: string }[] = [
+      { svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="3.5" x2="14" y2="3.5"/><line x1="2" y1="7" x2="10" y2="7"/><line x1="2" y1="10.5" x2="14" y2="10.5"/><line x1="2" y1="14" x2="10" y2="14"/></svg>', title: 'Left',   value: 'left' },
+      { svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="3.5" x2="14" y2="3.5"/><line x1="4" y1="7" x2="12" y2="7"/><line x1="2" y1="10.5" x2="14" y2="10.5"/><line x1="4" y1="14" x2="12" y2="14"/></svg>', title: 'Center', value: 'center' },
+      { svg: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="2" y1="3.5" x2="14" y2="3.5"/><line x1="6" y1="7" x2="14" y2="7"/><line x1="2" y1="10.5" x2="14" y2="10.5"/><line x1="6" y1="14" x2="14" y2="14"/></svg>', title: 'Right',  value: 'right' },
+    ];
+
+    const grid = document.createElement('div');
+    grid.className = 'bs-align-grid';
+
+    for (const opt of options) {
+      const btn = document.createElement('button');
+      btn.className = 'bs-align-option';
+      btn.innerHTML = `${opt.svg}<span>${opt.title}</span>`;
+      btn.title = opt.title;
+      btn.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleAlignClick(opt.value);
+      });
+      grid.appendChild(btn);
+    }
+
+    this.alignPopover.appendChild(grid);
+    this.element.appendChild(this.alignPopover);
+  }
+
+  private hideAlignPopover(): void {
+    if (this.alignPopover) {
+      this.alignPopover.remove();
+      this.alignPopover = null;
+    }
   }
 
   private applyHighlight(): void {
@@ -498,10 +577,12 @@ export class ToolbarElement {
     y: number,
     onFormat: () => void,
     aiContext?: AIActionContext,
-    selectionBottom?: number
+    selectionBottom?: number,
+    focusedBlockId?: string | null
   ): void {
     this.onFormat = onFormat;
     this.aiContext = aiContext || null;
+    this.focusedBlockId = focusedBlockId || null;
     this.saveSelection();
 
     this.buildUI();
@@ -534,11 +615,13 @@ export class ToolbarElement {
     this.element.style.transform = '';
     this.element.remove();
     this.hideColorPopover();
+    this.hideAlignPopover();
     this.hideLinkInput();
     this.hideEditInput();
     this.onFormat = null;
     this.aiContext = null;
     this.savedRange = null;
+    this.focusedBlockId = null;
   }
 
   isEditingWithAI(): boolean {

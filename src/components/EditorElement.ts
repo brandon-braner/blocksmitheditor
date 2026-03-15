@@ -267,6 +267,21 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.shadowRoot!.addEventListener('keydown', (e) => {
       this.handleGlobalKeyDown(e as KeyboardEvent);
     });
+
+    // Alignment from toolbar
+    this.shadowRoot!.addEventListener('bs-align', ((e: CustomEvent) => {
+      const { align, blockId } = e.detail as { align: string; blockId: string | null };
+      const targetId = blockId || this.focusedBlockId;
+      if (!targetId) return;
+
+      const block = this.editorState.getBlock(targetId);
+      if (!block) return;
+
+      const existingMeta = block.meta || {};
+      this.editorState.updateBlock(targetId, {
+        meta: { ...existingMeta, align },
+      });
+    }) as EventListener);
   }
 
   disconnectedCallback(): void {
@@ -802,7 +817,8 @@ export class EditorElement extends HTMLElement implements EditorInstance {
         }
       },
       aiContext,
-      rect.bottom
+      rect.bottom,
+      this.focusedBlockId
     );
   };
 

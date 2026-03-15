@@ -17,6 +17,10 @@ export const headingBlock: BlockDefinition<'heading'> = {
     el.className = `bs-heading bs-heading-${block.props.level}`;
     el.setAttribute('contenteditable', 'true');
     el.setAttribute('data-placeholder', `Heading ${block.props.level}`);
+    const align = (block.meta?.align as string) || '';
+    if (align && align !== 'left') {
+      el.style.textAlign = align;
+    }
     if (block.content && block.content.length > 0) {
       el.innerHTML = renderInlineContent(block.content);
     }

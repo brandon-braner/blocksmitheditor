@@ -631,3 +631,55 @@ mark {
   margin: -1px 0;
   transition: opacity 0.15s;
 }
+
+/* Alignment toolbar buttons */
+.bs-toolbar-btn-align {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-toolbar-btn-align svg {
+  display: block;
+}
+
+/* Alignment popover */
+.bs-align-popover {
+  background: #2a2a2a;
+  border-radius: 8px;
+  padding: 8px;
+  margin-top: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bs-align-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.bs-align-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.1s;
+  font-size: 13px;
+  color: #c4c4c4;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.bs-align-option:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.bs-align-option svg {
+  flex-shrink: 0;
+}

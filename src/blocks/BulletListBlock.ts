@@ -21,6 +21,10 @@ export const bulletListBlock: BlockDefinition<'bullet-list'> = {
     content.className = 'bs-list-content';
     content.setAttribute('contenteditable', 'true');
     content.setAttribute('data-placeholder', this.placeholder || '');
+    const align = (block.meta?.align as string) || '';
+    if (align && align !== 'left') {
+      content.style.textAlign = align;
+    }
     if (block.content && block.content.length > 0) {
       content.innerHTML = renderInlineContent(block.content);
     }

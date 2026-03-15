@@ -16,6 +16,10 @@ export const quoteBlock: BlockDefinition<'quote'> = {
     el.className = 'bs-quote';
     el.setAttribute('contenteditable', 'true');
     el.setAttribute('data-placeholder', this.placeholder || '');
+    const align = (block.meta?.align as string) || '';
+    if (align && align !== 'left') {
+      el.style.textAlign = align;
+    }
     if (block.content && block.content.length > 0) {
       el.innerHTML = renderInlineContent(block.content);
     }
