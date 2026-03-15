@@ -339,6 +339,65 @@ export class ToolbarElement {
     }
 
     this.colorPopover.appendChild(grid);
+
+    // Custom color row: native picker + hex input
+    const customRow = document.createElement('div');
+    customRow.className = 'bs-color-custom-row';
+
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    colorInput.className = 'bs-color-picker-input';
+    colorInput.value = '#e03e3e';
+    colorInput.title = 'Pick a custom color';
+
+    const hexInput = document.createElement('input');
+    hexInput.type = 'text';
+    hexInput.className = 'bs-color-hex-input';
+    hexInput.placeholder = '#hex';
+    hexInput.value = '#e03e3e';
+    hexInput.maxLength = 7;
+
+    const applyBtn = document.createElement('button');
+    applyBtn.className = 'bs-color-apply-btn';
+    applyBtn.textContent = 'Apply';
+    applyBtn.title = 'Apply custom color';
+
+    // Sync the native picker → hex input
+    colorInput.addEventListener('input', (e) => {
+      e.stopPropagation();
+      hexInput.value = colorInput.value;
+    });
+
+    // Prevent toolbar dismiss on interaction
+    colorInput.addEventListener('mousedown', (e) => e.stopPropagation());
+    hexInput.addEventListener('mousedown', (e) => e.stopPropagation());
+    hexInput.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const hex = hexInput.value.trim();
+        if (/^#[0-9a-fA-F]{3,6}$/.test(hex)) {
+          this.applyTextColor(hex);
+          this.hideColorPopover();
+        }
+      }
+    });
+
+    applyBtn.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const hex = hexInput.value.trim();
+      if (/^#[0-9a-fA-F]{3,6}$/.test(hex)) {
+        this.applyTextColor(hex);
+        this.hideColorPopover();
+      }
+    });
+
+    customRow.appendChild(colorInput);
+    customRow.appendChild(hexInput);
+    customRow.appendChild(applyBtn);
+    this.colorPopover.appendChild(customRow);
+
     this.element.appendChild(this.colorPopover);
   }
 

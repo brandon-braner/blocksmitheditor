@@ -527,6 +527,82 @@ mark {
   transform: scale(1.15);
 }
 
+/* Custom color picker row */
+.bs-color-custom-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.bs-color-picker-input {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  flex-shrink: 0;
+}
+
+.bs-color-picker-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.bs-color-picker-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.bs-color-picker-input::-moz-color-swatch {
+  border: none;
+  border-radius: 50%;
+}
+
+.bs-color-hex-input {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  background: #1e1e1e;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  color: #d4d4d4;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  outline: none;
+}
+
+.bs-color-hex-input:focus {
+  border-color: #60a5fa;
+}
+
+.bs-color-hex-input::placeholder {
+  color: #555;
+}
+
+.bs-color-apply-btn {
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  color: #d4d4d4;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.bs-color-apply-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+}
+
 /* Link input row */
 .bs-toolbar-link-row {
   padding: 4px 2px;
