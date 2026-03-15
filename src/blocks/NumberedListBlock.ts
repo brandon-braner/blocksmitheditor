@@ -1,6 +1,5 @@
 import type { BlockDefinition } from '../model/types.js';
 import { renderInlineContent, parseInlineContent } from '../utils/dom.js';
-import { renderInlineToHTML } from '../utils/htmlUtils.js';
 
 export const numberedListBlock: BlockDefinition<'numbered-list'> = {
   type: 'numbered-list',
@@ -51,9 +50,5 @@ export const numberedListBlock: BlockDefinition<'numbered-list'> = {
   parseContent(element) {
     const content = element.querySelector('.bs-list-content') as HTMLElement;
     return content ? parseInlineContent(content) : [];
-  },
-
-  toHTML(block) {
-    return `  <li>${renderInlineToHTML(block.content)}</li>`;
   },
 };

@@ -1,6 +1,5 @@
 import type { BlockDefinition } from '../model/types.js';
 import { renderInlineContent, parseInlineContent } from '../utils/dom.js';
-import { renderInlineToHTML, alignStyle } from '../utils/htmlUtils.js';
 
 export const paragraphBlock: BlockDefinition<'paragraph'> = {
   type: 'paragraph',
@@ -29,9 +28,5 @@ export const paragraphBlock: BlockDefinition<'paragraph'> = {
 
   parseContent(element) {
     return parseInlineContent(element);
-  },
-
-  toHTML(block) {
-    return `<p${alignStyle(block)}>${renderInlineToHTML(block.content)}</p>`;
   },
 };

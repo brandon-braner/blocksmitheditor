@@ -1,6 +1,5 @@
 import type { BlockDefinition } from '../model/types.js';
 import { renderInlineContent, parseInlineContent } from '../utils/dom.js';
-import { renderInlineToHTML, alignStyle } from '../utils/htmlUtils.js';
 
 export const quoteBlock: BlockDefinition<'quote'> = {
   type: 'quote',
@@ -29,9 +28,5 @@ export const quoteBlock: BlockDefinition<'quote'> = {
 
   parseContent(element) {
     return parseInlineContent(element);
-  },
-
-  toHTML(block) {
-    return `<blockquote${alignStyle(block)}>${renderInlineToHTML(block.content)}</blockquote>`;
   },
 };

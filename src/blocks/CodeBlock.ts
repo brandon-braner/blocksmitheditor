@@ -1,5 +1,4 @@
 import type { BlockDefinition } from '../model/types.js';
-import { escapeHTML as escapeHTMLUtil, getPlainText, alignStyle } from '../utils/htmlUtils.js';
 import hljs from 'highlight.js/lib/core';
 
 import javascript from 'highlight.js/lib/languages/javascript';
@@ -176,14 +175,6 @@ export const codeBlock: BlockDefinition<'code'> = {
     if (!codeEl) return [];
     const text = codeEl.textContent || '';
     return text ? [{ type: 'text' as const, text, marks: [] }] : [];
-  },
-
-  toHTML(block) {
-    const style = alignStyle(block);
-    const text = getPlainText(block.content);
-    const lang = block.props.language;
-    const langAttr = lang ? ` class="language-${escapeHTMLUtil(lang)}"` : '';
-    return `<pre${style}><code${langAttr}>${escapeHTMLUtil(text)}</code></pre>`;
   },
 };
 
