@@ -4,13 +4,11 @@ import type {
   Block,
   BlockType,
   BlockDefinition,
-  AIActionContext,
 } from '../model/types.js';
 import { EventBus } from '../core/EventBus.js';
 import { EditorState } from '../core/EditorState.js';
 import { CommandManager } from '../core/CommandManager.js';
 import { BlockRegistry } from '../core/BlockRegistry.js';
-import { AIManager } from '../ai/AIManager.js';
 import {
   InsertBlockCommand,
   DeleteBlockCommand,
@@ -36,19 +34,8 @@ import { dividerBlock } from '../blocks/DividerBlock.js';
 import { imageBlock } from '../blocks/ImageBlock.js';
 import { tableBlock } from '../blocks/TableBlock.js';
 
-import { writeAction } from '../ai/actions/WriteAction.js';
-import { rewriteAction } from '../ai/actions/RewriteAction.js';
-import { summarizeAction } from '../ai/actions/SummarizeAction.js';
-import { expandAction } from '../ai/actions/ExpandAction.js';
-import { improveAction } from '../ai/actions/ImproveAction.js';
-import { proofreadAction } from '../ai/actions/ProofreadAction.js';
-import { explainAction } from '../ai/actions/ExplainAction.js';
-import { reformatAction } from '../ai/actions/ReformatAction.js';
-import { editWithAIAction } from '../ai/actions/EditWithAIAction.js';
-
 import { SlashMenuElement } from './SlashMenuElement.js';
 import { ToolbarElement } from './ToolbarElement.js';
-import { AIMenuElement } from './AIMenuElement.js';
 
 import editorStyles from '../../styles/editor.css?inline';
 
@@ -57,7 +44,6 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   private editorState!: EditorState;
   private commandManager!: CommandManager;
   private blockRegistry!: BlockRegistry;
-  private aiManager!: AIManager;
   private pluginManager!: PluginManager;
 
   private editorContainer!: HTMLDivElement;
@@ -67,7 +53,6 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   private focusedBlockId: string | null = null;
   private slashMenu!: SlashMenuElement;
   private toolbar!: ToolbarElement;
-  private aiMenu!: AIMenuElement;
   private slashFilterStart: number | null = null;
 
   private _config: EditorConfig = {};
@@ -108,7 +93,6 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.eventBus = new EventBus();
     this.commandManager = new CommandManager();
     this.blockRegistry = new BlockRegistry();
-    this.aiManager = new AIManager(this.eventBus);
     this.pluginManager = new PluginManager(this.eventBus, () => {
       // Use a getter so plugins always see the *current* editorState,
       // even after setDocument() replaces it with a new instance.
@@ -117,6 +101,11 @@ export class EditorElement extends HTMLElement implements EditorInstance {
         get editorState() { return self.editorState; },
         eventBus: this.eventBus,
         commandManager: this.commandManager,
+        shadowRoot: shadow,
+        getSelectedText: () => getSelectedText(self.shadowRoot!),
+        getFocusedBlockId: () => self.focusedBlockId,
+        createBlock: (type, props, content) => createBlock(type, props, content),
+        getBlockElement: (blockId) => self.blockElements.get(blockId) ?? null,
       };
       return ctx;
     });
@@ -132,22 +121,9 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.blockRegistry.register(imageBlock);
     this.blockRegistry.register(tableBlock);
 
-    // Register built-in AI actions
-    this.aiManager.registerAction(writeAction);
-    this.aiManager.registerAction(rewriteAction);
-    this.aiManager.registerAction(summarizeAction);
-    this.aiManager.registerAction(expandAction);
-    this.aiManager.registerAction(improveAction);
-    this.aiManager.registerAction(proofreadAction);
-    this.aiManager.registerAction(explainAction);
-    this.aiManager.registerAction(reformatAction);
-    this.aiManager.registerAction(editWithAIAction);
-
     // Initialize menus
     this.slashMenu = new SlashMenuElement(shadow);
     this.toolbar = new ToolbarElement(shadow);
-    this.toolbar.setAIManager(this.aiManager);
-    this.aiMenu = new AIMenuElement(shadow, this.aiManager);
 
     this.initFromConfig();
     this.setupEventListeners();
@@ -166,10 +142,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       }
     }
 
-    // Set AI provider
-    if (config.aiProvider) {
-      this.aiManager.setProvider(config.aiProvider);
-    }
+
 
     // Listen for state changes
     this.eventBus.on('state:changed', () => {
@@ -479,7 +452,6 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     editable.addEventListener('keydown', (e) => {
       // Let menus handle first
       if (this.slashMenu.isVisible() && this.slashMenu.handleKeyDown(e)) return;
-      if (this.aiMenu.isVisible() && this.aiMenu.handleKeyDown(e)) return;
 
       this.handleBlockKeyDown(e, editable, blockId, blockType);
     });
@@ -800,8 +772,8 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   // ============================================================
 
   private handleSelectionChange = (): void => {
-    // Don't dismiss toolbar while AI edit input or link input is active
-    if (this.toolbar.isEditingWithAI() || this.toolbar.isEditingLink()) return;
+    // Don't dismiss toolbar while link input is active
+    if (this.toolbar.isEditingLink()) return;
 
     const sel = getShadowSelection(this.shadowRoot!);
     if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
@@ -817,21 +789,11 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       return;
     }
 
-    // Build AI context for the toolbar
-    const focusedBlock = this.focusedBlockId
-      ? this.editorState.getBlock(this.focusedBlockId)
-      : null;
-
-    let aiContext: AIActionContext | undefined;
-    if (focusedBlock) {
-      aiContext = {
-        selectedText: getSelectedText(this.shadowRoot!),
-        selectedBlocks: [focusedBlock],
-        cursorBlockId: focusedBlock.id,
-        editorState: this.editorState,
-        commandManager: this.commandManager,
-      };
-    }
+    // Emit selection change event for plugins (e.g. AI plugin)
+    this.eventBus.emit('selection:changed', {
+      selectedText: getSelectedText(this.shadowRoot!),
+      focusedBlockId: this.focusedBlockId,
+    });
 
     const rect = range.getBoundingClientRect();
     this.toolbar.show(
@@ -843,7 +805,6 @@ export class EditorElement extends HTMLElement implements EditorInstance {
           this.saveBlockContent(this.focusedBlockId);
         }
       },
-      aiContext,
       rect.bottom,
       this.focusedBlockId
     );
@@ -889,42 +850,14 @@ export class EditorElement extends HTMLElement implements EditorInstance {
       if (this.focusedBlockId) this.saveBlockContent(this.focusedBlockId);
     }
 
-    // AI menu (Ctrl+J)
+    // AI menu (Ctrl+J) — emit event for AI plugin to handle
     if (mod && e.key === 'j') {
       e.preventDefault();
-      this.openAIMenu();
+      this.eventBus.emit('ai:request-menu', {
+        focusedBlockId: this.focusedBlockId,
+        selectedText: getSelectedText(this.shadowRoot!),
+      });
     }
-  }
-
-  // ============================================================
-  // AI MENU
-  // ============================================================
-
-  private openAIMenu(): void {
-    if (!this.aiManager.getProvider()) return;
-
-    const focusedBlock = this.focusedBlockId
-      ? this.editorState.getBlock(this.focusedBlockId)
-      : null;
-
-    if (!focusedBlock) return;
-
-    const wrapper = this.blockElements.get(focusedBlock.id);
-    if (!wrapper) return;
-
-    const rect = wrapper.getBoundingClientRect();
-
-    const context: AIActionContext = {
-      selectedText: getSelectedText(this.shadowRoot!),
-      selectedBlocks: focusedBlock ? [focusedBlock] : [],
-      cursorBlockId: focusedBlock.id,
-      editorState: this.editorState,
-      commandManager: this.commandManager,
-    };
-
-    this.aiMenu.show(rect.left, rect.bottom + 4, context, () => {
-      this.aiMenu.hide();
-    });
   }
 
   // ============================================================
@@ -1177,8 +1110,8 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.renderAllBlocks();
   }
 
-  registerAIProvider(provider: import('../model/types.js').AIProvider): void {
-    this.aiManager.setProvider(provider);
+  registerAIProvider(_provider: import('../model/types.js').AIProvider): void {
+    console.warn('[Blocksmith] registerAIProvider() is deprecated. Use the @blocksmith/plugin-ai plugin instead.');
   }
 
   registerPlugin(plugin: import('../plugins/PluginTypes.js').EditorPlugin): void {
@@ -1201,6 +1134,11 @@ export class EditorElement extends HTMLElement implements EditorInstance {
         editorState: this.editorState,
         eventBus: this.eventBus,
         commandManager: this.commandManager,
+        shadowRoot: this.shadowRoot!,
+        getSelectedText: () => '',
+        getFocusedBlockId: () => null,
+        createBlock,
+        getBlockElement: () => null,
       });
       plugin = tempPlugin;
     }

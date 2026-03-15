@@ -77,6 +77,8 @@ export interface BlockDefinition<T extends BlockType = BlockType> {
   hasContent: boolean;
   placeholder?: string;
   slashMenuKeywords?: string[];
+  /** Optional: render this block as HTML for export */
+  toHTML?: (block: Block<T>) => string;
 }
 
 // ============================================================
@@ -132,7 +134,6 @@ export interface EditorConfig {
   initialContent?: EditorDocument;
   placeholder?: string;
   readOnly?: boolean;
-  aiProvider?: AIProvider;
   customBlocks?: BlockDefinition[];
   plugins?: EditorPlugin[];
   onChange?: (document: EditorDocument) => void;
@@ -149,6 +150,7 @@ export interface EditorInstance {
   focusEditor(blockId?: string): void;
   undo(): void;
   redo(): void;
+  /** @deprecated Use @blocksmith/plugin-ai instead */
   registerAIProvider(provider: AIProvider): void;
   registerPlugin(plugin: EditorPlugin): void;
   getPlugin<T extends EditorPlugin = EditorPlugin>(id: string): T | undefined;

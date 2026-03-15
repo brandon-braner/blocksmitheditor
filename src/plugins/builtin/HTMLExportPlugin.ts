@@ -23,7 +23,7 @@ export class HTMLExportPlugin implements EditorPlugin {
    * Export the current document as an HTML string.
    * Returns a complete HTML document with embedded styles.
    */
-  exportHTML(title = 'Blocksmith Document'): string {
+  exportHTML(_title = 'Blocksmith Document'): string {
     if (!this.context) throw new Error('HTMLExportPlugin is not initialized');
 
     const doc = this.context.editorState.toDocument();

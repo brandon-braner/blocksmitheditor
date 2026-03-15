@@ -22,15 +22,20 @@ export type {
 } from './model/types.js';
 
 export type { EditorPlugin, PluginContext } from './plugins/PluginTypes.js';
+export type { EditorEvent } from './core/EventBus.js';
 
 export { createBlock } from './model/Block.js';
 export { EventBus } from './core/EventBus.js';
 export { EditorState } from './core/EditorState.js';
 export { CommandManager } from './core/CommandManager.js';
 export { BlockRegistry } from './core/BlockRegistry.js';
-export { AIManager } from './ai/AIManager.js';
-export { OpenAICompatibleProvider } from './ai/providers/OpenAICompatibleProvider.js';
-export type { OpenAIProviderConfig } from './ai/providers/OpenAICompatibleProvider.js';
+export {
+  InsertBlockCommand,
+  DeleteBlockCommand,
+  UpdateBlockCommand,
+  MoveBlockCommand,
+  ChangeBlockTypeCommand,
+} from './core/commands.js';
 export { EditorElement } from './components/EditorElement.js';
 export { hljs } from './blocks/CodeBlock.js';
 

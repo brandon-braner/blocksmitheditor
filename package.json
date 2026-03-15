@@ -1,7 +1,7 @@
 {
   "name": "@blocksmith/editor",
   "version": "0.1.0",
-  "description": "A framework-agnostic block-style editor with AI integration",
+  "description": "A framework-agnostic block-style editor",
   "type": "module",
   "main": "./dist/blocksmith-editor.umd.cjs",
   "module": "./dist/blocksmith-editor.js",
@@ -40,7 +40,6 @@
     "vite-plugin-dts": "^4.3.0"
   },
   "dependencies": {
-    "highlight.js": "^11.11.1",
-    "openai": "^6.29.0"
+    "highlight.js": "^11.11.1"
   }
 }

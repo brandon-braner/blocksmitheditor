@@ -6,6 +6,7 @@ export type EditorEvent =
   | 'block:moved'
   | 'block:focused'
   | 'selection:changed'
+  | 'ai:request-menu'
   | 'ai:start'
   | 'ai:chunk'
   | 'ai:complete'

@@ -1,5 +1,4 @@
-import type { InlineMark, AIActionContext } from '../model/types.js';
-import type { AIManager } from '../ai/AIManager.js';
+import type { InlineMark } from '../model/types.js';
 import { getShadowSelection } from '../utils/dom.js';
 
 // ============================================================
@@ -43,25 +42,6 @@ const FORMAT_BUTTONS: FormatButton[] = [
 ];
 
 // ============================================================
-// AI ACTIONS
-// ============================================================
-
-interface AIMenuItem {
-  id: string;
-  label: string;
-  icon: string;
-  requiresSelection: boolean;
-}
-
-const AI_MENU_ITEMS: AIMenuItem[] = [
-  { id: 'improve', label: 'Improve writing', icon: '✍️', requiresSelection: true },
-  { id: 'proofread', label: 'Proofread', icon: '✅', requiresSelection: true },
-  { id: 'explain', label: 'Explain', icon: '💡', requiresSelection: true },
-  { id: 'reformat', label: 'Reformat', icon: '✨', requiresSelection: true },
-  { id: 'editWithAI', label: 'Edit with AI', icon: '🤖', requiresSelection: true },
-];
-
-// ============================================================
 // TOOLBAR ELEMENT
 // ============================================================
 
@@ -71,8 +51,6 @@ export class ToolbarElement {
   private alignPopover: HTMLDivElement | null = null;
   private linkInput: HTMLDivElement | null = null;
   private onFormat: (() => void) | null = null;
-  private aiManager: AIManager | null = null;
-  private aiContext: AIActionContext | null = null;
   private savedRange: Range | null = null;
   private focusedBlockId: string | null = null;
 
@@ -82,10 +60,6 @@ export class ToolbarElement {
     this.element.style.display = 'none';
   }
 
-  setAIManager(aiManager: AIManager): void {
-    this.aiManager = aiManager;
-  }
-
   // ============================================================
   // BUILD UI
   // ============================================================
@@ -93,7 +67,7 @@ export class ToolbarElement {
   private buildUI(): void {
     this.element.innerHTML = '';
 
-    // === Top row: Formatting buttons ===
+    // === Formatting buttons ===
     const formatRow = document.createElement('div');
     formatRow.className = 'bs-toolbar-row';
 
@@ -145,29 +119,6 @@ export class ToolbarElement {
     formatRow.appendChild(alignBtn);
 
     this.element.appendChild(formatRow);
-
-    // === Divider ===
-    const divider = document.createElement('div');
-    divider.className = 'bs-toolbar-divider';
-    this.element.appendChild(divider);
-
-    // === Bottom row: AI actions ===
-    const aiRow = document.createElement('div');
-    aiRow.className = 'bs-toolbar-row bs-toolbar-ai-row';
-
-    for (const item of AI_MENU_ITEMS) {
-      const aiBtn = document.createElement('button');
-      aiBtn.className = 'bs-toolbar-ai-item';
-      aiBtn.innerHTML = `<span class="bs-toolbar-ai-icon">${item.icon}</span> ${item.label}`;
-      aiBtn.title = item.label;
-      aiBtn.addEventListener('mousedown', (e) => {
-        e.preventDefault();
-        this.handleAIClick(item);
-      });
-      aiRow.appendChild(aiBtn);
-    }
-
-    this.element.appendChild(aiRow);
   }
 
   private createSeparator(): HTMLDivElement {
@@ -505,137 +456,6 @@ export class ToolbarElement {
   }
 
   // ============================================================
-  // AI ACTIONS
-  // ============================================================
-
-  private aiEditInput: HTMLDivElement | null = null;
-
-  private async handleAIClick(item: AIMenuItem): Promise<void> {
-    if (!this.aiManager || !this.aiContext) return;
-
-    const provider = this.aiManager.getProvider();
-    if (!provider) {
-      console.warn('No AI provider configured');
-      return;
-    }
-
-    // "Edit with AI" shows a text input for custom instructions
-    if (item.id === 'editWithAI') {
-      this.showEditInput();
-      return;
-    }
-
-    // All other actions map directly to their action ID
-    const actionId = item.id;
-    const action = this.aiManager.getAction(actionId);
-    if (!action) {
-      console.warn(`AI action "${actionId}" not registered`);
-      return;
-    }
-
-    await this.executeAIAction(actionId, this.aiContext);
-  }
-
-  private async executeAIAction(
-    actionId: string,
-    context: AIActionContext
-  ): Promise<void> {
-    if (!this.aiManager) return;
-
-    this.showAILoading();
-
-    try {
-      await this.aiManager.executeAction(actionId, context);
-    } catch (err) {
-      console.error('AI action failed:', err);
-    } finally {
-      this.hideAILoading();
-      this.hide();
-    }
-  }
-
-  // --- Loading indicator ---
-
-  private showAILoading(): void {
-    // Disable all buttons and show loading text
-    const buttons = this.element.querySelectorAll('button');
-    buttons.forEach((btn) => {
-      (btn as HTMLButtonElement).disabled = true;
-      (btn as HTMLButtonElement).style.opacity = '0.5';
-      (btn as HTMLButtonElement).style.pointerEvents = 'none';
-    });
-
-    const loadingBar = document.createElement('div');
-    loadingBar.className = 'bs-toolbar-loading';
-    loadingBar.innerHTML = '<span class="bs-toolbar-spinner"></span> Thinking...';
-    loadingBar.style.cssText =
-      'display: flex; align-items: center; gap: 8px; padding: 6px 12px; ' +
-      'color: #a78bfa; font-size: 13px; border-top: 1px solid rgba(255,255,255,0.1);';
-    this.element.appendChild(loadingBar);
-  }
-
-  private hideAILoading(): void {
-    const loading = this.element.querySelector('.bs-toolbar-loading');
-    loading?.remove();
-
-    const buttons = this.element.querySelectorAll('button');
-    buttons.forEach((btn) => {
-      (btn as HTMLButtonElement).disabled = false;
-      (btn as HTMLButtonElement).style.opacity = '';
-      (btn as HTMLButtonElement).style.pointerEvents = '';
-    });
-  }
-
-  // --- Edit with AI text input ---
-
-  private showEditInput(): void {
-    this.saveSelection();
-    this.hideEditInput();
-
-    this.aiEditInput = document.createElement('div');
-    this.aiEditInput.className = 'bs-toolbar-link-row';
-
-    const input = document.createElement('input');
-    input.className = 'bs-toolbar-link-input';
-    input.type = 'text';
-    input.placeholder = 'Tell AI how to edit this text...';
-    input.addEventListener('keydown', (e) => {
-      e.stopPropagation();
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const instruction = input.value.trim();
-        if (instruction && this.aiContext) {
-          // Pack instruction + original text with separator
-          const editContext: AIActionContext = {
-            ...this.aiContext,
-            selectedText: instruction + '\n---\n' + this.aiContext.selectedText,
-          };
-          this.hideEditInput();
-          this.executeAIAction('editWithAI', editContext);
-        }
-      } else if (e.key === 'Escape') {
-        e.preventDefault();
-        this.hideEditInput();
-      }
-    });
-
-    input.addEventListener('mousedown', (e) => {
-      e.stopPropagation();
-    });
-
-    this.aiEditInput.appendChild(input);
-    this.element.appendChild(this.aiEditInput);
-    requestAnimationFrame(() => input.focus());
-  }
-
-  private hideEditInput(): void {
-    if (this.aiEditInput) {
-      this.aiEditInput.remove();
-      this.aiEditInput = null;
-    }
-  }
-
-  // ============================================================
   // SELECTION MANAGEMENT
   // ============================================================
 
@@ -664,12 +484,10 @@ export class ToolbarElement {
     x: number,
     y: number,
     onFormat: () => void,
-    aiContext?: AIActionContext,
     selectionBottom?: number,
     focusedBlockId?: string | null
   ): void {
     this.onFormat = onFormat;
-    this.aiContext = aiContext || null;
     this.focusedBlockId = focusedBlockId || null;
     this.saveSelection();
 
@@ -705,15 +523,9 @@ export class ToolbarElement {
     this.hideColorPopover();
     this.hideAlignPopover();
     this.hideLinkInput();
-    this.hideEditInput();
     this.onFormat = null;
-    this.aiContext = null;
     this.savedRange = null;
     this.focusedBlockId = null;
-  }
-
-  isEditingWithAI(): boolean {
-    return this.aiEditInput !== null;
   }
 
   isEditingLink(): boolean {
@@ -724,3 +536,4 @@ export class ToolbarElement {
     return this.element.style.display !== 'none';
   }
 }
+

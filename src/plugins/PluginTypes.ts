@@ -1,14 +1,37 @@
-import type { EditorStateInterface, CommandManagerInterface } from '../model/types.js';
+import type { EditorStateInterface, CommandManagerInterface, Block, BlockType, InlineContent } from '../model/types.js';
 import type { EventBus } from '../core/EventBus.js';
 
 /**
  * Context provided to plugins during initialization.
  * Gives read/write access to the editor's core systems.
+ *
+ * External plugins (published as separate npm packages) use this
+ * context to interact with the editor without coupling to internal
+ * implementation details.
  */
 export interface PluginContext {
   readonly editorState: EditorStateInterface;
   readonly eventBus: EventBus;
   readonly commandManager: CommandManagerInterface;
+
+  /**
+   * The editor's Shadow DOM root.
+   * Plugins can append their own UI elements here (floating menus,
+   * toolbar sections, overlays, etc.).
+   */
+  readonly shadowRoot: ShadowRoot;
+
+  /** Returns the currently selected text inside the editor. */
+  getSelectedText(): string;
+
+  /** Returns the id of the currently focused block, or null. */
+  getFocusedBlockId(): string | null;
+
+  /** Factory to create a new Block value object. */
+  createBlock(type: BlockType, props?: Record<string, unknown>, content?: InlineContent[]): Block;
+
+  /** Returns the DOM wrapper element for a block, or null. */
+  getBlockElement(blockId: string): HTMLElement | null;
 }
 
 /**
