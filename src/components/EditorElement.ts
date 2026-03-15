@@ -22,6 +22,9 @@ import { getCaretPosition, setCaretPosition, getSelectedText, getShadowSelection
 import { matchMarkdownShortcut } from '../formatting/MarkdownShortcuts.js';
 import { debounce, type DebouncedFn } from '../utils/debounce.js';
 import { sanitizeHtml } from '../utils/sanitize.js';
+import { PluginManager } from '../plugins/PluginManager.js';
+import type { PluginContext } from '../plugins/PluginTypes.js';
+import { HTMLExportPlugin } from '../plugins/builtin/HTMLExportPlugin.js';
 
 import { paragraphBlock } from '../blocks/ParagraphBlock.js';
 import { headingBlock } from '../blocks/HeadingBlock.js';
@@ -54,6 +57,7 @@ export class EditorElement extends HTMLElement implements EditorInstance {
   private commandManager!: CommandManager;
   private blockRegistry!: BlockRegistry;
   private aiManager!: AIManager;
+  private pluginManager!: PluginManager;
 
   private editorContainer!: HTMLDivElement;
   private blockElements = new Map<string, HTMLElement>();
@@ -104,6 +108,17 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.commandManager = new CommandManager();
     this.blockRegistry = new BlockRegistry();
     this.aiManager = new AIManager(this.eventBus);
+    this.pluginManager = new PluginManager(this.eventBus, () => {
+      // Use a getter so plugins always see the *current* editorState,
+      // even after setDocument() replaces it with a new instance.
+      const self = this;
+      const ctx: PluginContext = {
+        get editorState() { return self.editorState; },
+        eventBus: this.eventBus,
+        commandManager: this.commandManager,
+      };
+      return ctx;
+    });
 
     // Register built-in blocks
     this.blockRegistry.register(paragraphBlock);
@@ -166,6 +181,13 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     if (this.editorState.getBlocks().length === 0) {
       const block = createBlock('paragraph');
       this.editorState.insertBlock(block, 0);
+    }
+
+    // Register plugins from config
+    if (config.plugins) {
+      for (const plugin of config.plugins) {
+        this.pluginManager.register(plugin);
+      }
     }
 
     config.onReady?.(this);
@@ -1017,7 +1039,43 @@ export class EditorElement extends HTMLElement implements EditorInstance {
     this.aiManager.setProvider(provider);
   }
 
+  registerPlugin(plugin: import('../plugins/PluginTypes.js').EditorPlugin): void {
+    this.pluginManager.register(plugin);
+  }
+
+  getPlugin<T extends import('../plugins/PluginTypes.js').EditorPlugin = import('../plugins/PluginTypes.js').EditorPlugin>(id: string): T | undefined {
+    return this.pluginManager.get<T>(id);
+  }
+
+  exportHTML(title = 'Blocksmith Document'): string {
+    // Use the HTMLExportPlugin if registered
+    let plugin = this.pluginManager.get<import('../plugins/builtin/HTMLExportPlugin.js').HTMLExportPlugin>('html-export');
+
+    // If the plugin isn't registered, create a temporary one with the
+    // current editor state so we always produce rendered HTML (never raw JSON).
+    if (!plugin || typeof plugin.exportHTML !== 'function') {
+      const tempPlugin = new HTMLExportPlugin();
+      tempPlugin.init({
+        editorState: this.editorState,
+        eventBus: this.eventBus,
+        commandManager: this.commandManager,
+      });
+      plugin = tempPlugin;
+    }
+
+    const html = plugin!.exportHTML(title);
+
+    // Dispatch a DOM CustomEvent so external listeners can grab the content
+    this.dispatchEvent(new CustomEvent('bs-export-html', {
+      bubbles: true,
+      composed: true,
+      detail: { html, title },
+    }));
+    return html;
+  }
+
   destroy(): void {
+    this.pluginManager.destroyAll();
     document.removeEventListener('selectionchange', this.handleSelectionChange);
     this.eventBus.destroy();
     this.editorContainer.innerHTML = '';

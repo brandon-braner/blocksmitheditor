@@ -42,6 +42,13 @@
     .actions button:hover {
       background: #f3f4f6;
     }
+    .actions .export-btn {
+      border-color: #3b82f6;
+      color: #3b82f6;
+    }
+    .actions .export-btn:hover {
+      background: #eff6ff;
+    }
     #editor-container {
       width: 100%;
       max-width: 800px;
@@ -76,6 +83,8 @@
     <h1>Blocksmith Editor</h1>
     <div class="actions">
       <button onclick="showJSON()">View JSON</button>
+      <button class="export-btn" onclick="exportHTML()">Export HTML</button>
+      <button class="export-btn" onclick="exportPDF()">Export PDF</button>
       <button onclick="loadSample()">Load Sample</button>
     </div>
   </header>
@@ -84,7 +93,13 @@
   <pre id="output"></pre>
 
   <script type="module">
-    import { createEditor, OpenAICompatibleProvider } from './src/index.ts';
+    import {
+      createEditor,
+      OpenAICompatibleProvider,
+      AutoSavePlugin,
+      HTMLExportPlugin,
+      PDFExportPlugin,
+    } from './src/index.ts';
 
     // AI Provider — all requests go through a LiteLLM proxy.
     // Configure via env vars in .env file:
@@ -145,21 +160,29 @@
 
     const aiProvider = await createAIProvider();
 
+    // Create plugins
+    const autoSave = new AutoSavePlugin({
+      key: 'blocksmith-doc',
+      debounceMs: 1000,
+    });
+    const htmlExport = new HTMLExportPlugin();
+    const pdfExport = new PDFExportPlugin();
+
     const editor = createEditor(document.getElementById('editor-container'), {
       placeholder: "Type '/' for commands...",
       aiProvider,
-      onChange(doc) {
-        // Auto-save to localStorage
-        localStorage.setItem('blocksmith-doc', JSON.stringify(doc));
-      },
+      plugins: [autoSave, htmlExport, pdfExport],
       onReady(ed) {
-        // Load from localStorage if available
-        const saved = localStorage.getItem('blocksmith-doc');
-        if (saved) {
-          try {
-            ed.setDocument(JSON.parse(saved));
-          } catch {
-            // ignore invalid saved data
+        // Load from localStorage if available (via the auto-save plugin)
+        const savedPlugin = ed.getPlugin('auto-save');
+        if (savedPlugin) {
+          const saved = savedPlugin.load();
+          if (saved) {
+            try {
+              ed.setDocument(JSON.parse(saved));
+            } catch {
+              // ignore invalid saved data
+            }
           }
         }
       },
@@ -175,6 +198,28 @@
       } else {
         output.style.display = 'block';
         output.textContent = JSON.stringify(editor.getDocument(), null, 2);
+      }
+    };
+
+    // Listen for export events on the editor element
+    const editorEl = document.querySelector('blocksmith-editor');
+    editorEl.addEventListener('bs-export-html', (e) => {
+      console.log('[bs-export-html event] HTML exported, length:', e.detail.html.length);
+    });
+
+    window.exportHTML = async function() {
+      // Call exportHTML() directly on the editor — no plugin lookup needed
+      const html = editor.exportHTML('Blocksmith Document');
+
+      // Use the File System Access API for a native "Save As" dialog
+      // that guarantees the correct filename and .html extension.
+
+    };
+
+    window.exportPDF = function() {
+      const plugin = editor.getPlugin('pdf-export');
+      if (plugin) {
+        plugin.exportPDF('Blocksmith Document');
       }
     };
 

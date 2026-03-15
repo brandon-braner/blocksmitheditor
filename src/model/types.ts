@@ -1,3 +1,5 @@
+import type { EditorPlugin } from '../plugins/PluginTypes.js';
+
 // ============================================================
 // DOCUMENT MODEL
 // ============================================================
@@ -130,6 +132,7 @@ export interface EditorConfig {
   readOnly?: boolean;
   aiProvider?: AIProvider;
   customBlocks?: BlockDefinition[];
+  plugins?: EditorPlugin[];
   onChange?: (document: EditorDocument) => void;
   onReady?: (editor: EditorInstance) => void;
 }
@@ -145,6 +148,10 @@ export interface EditorInstance {
   undo(): void;
   redo(): void;
   registerAIProvider(provider: AIProvider): void;
+  registerPlugin(plugin: EditorPlugin): void;
+  getPlugin<T extends EditorPlugin = EditorPlugin>(id: string): T | undefined;
+  /** Export the current document as a complete HTML string. */
+  exportHTML(title?: string): string;
   destroy(): void;
 }
 

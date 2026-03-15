@@ -9,7 +9,11 @@ export type EditorEvent =
   | 'ai:start'
   | 'ai:chunk'
   | 'ai:complete'
-  | 'ai:error';
+  | 'ai:error'
+  | 'plugin:registered'
+  | 'plugin:unregistered'
+  | 'document:saved'
+  | 'document:exported';
 
 type Handler = (data?: unknown) => void;
 

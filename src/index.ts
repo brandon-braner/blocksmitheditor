@@ -21,6 +21,8 @@ export type {
   CommandManagerInterface,
 } from './model/types.js';
 
+export type { EditorPlugin, PluginContext } from './plugins/PluginTypes.js';
+
 export { createBlock } from './model/Block.js';
 export { EventBus } from './core/EventBus.js';
 export { EditorState } from './core/EditorState.js';
@@ -31,6 +33,13 @@ export { OpenAICompatibleProvider } from './ai/providers/OpenAICompatibleProvide
 export type { OpenAIProviderConfig } from './ai/providers/OpenAICompatibleProvider.js';
 export { EditorElement } from './components/EditorElement.js';
 export { hljs } from './blocks/CodeBlock.js';
+
+// Plugin system
+export { PluginManager } from './plugins/PluginManager.js';
+export { AutoSavePlugin } from './plugins/builtin/AutoSavePlugin.js';
+export type { AutoSaveConfig } from './plugins/builtin/AutoSavePlugin.js';
+export { HTMLExportPlugin } from './plugins/builtin/HTMLExportPlugin.js';
+export { PDFExportPlugin } from './plugins/builtin/PDFExportPlugin.js';
 
 import { EditorElement } from './components/EditorElement.js';
 import type { EditorConfig, EditorInstance } from './model/types.js';
