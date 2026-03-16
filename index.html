@@ -99,19 +99,16 @@
       HTMLExportPlugin,
       PDFExportPlugin,
     } from './src/index.ts';
+    import { AIPlugin, OpenAICompatibleProvider } from '@blocksmith/plugin-ai';
 
-    // ── AI Support ──────────────────────────────────────────────
-    // AI capabilities are now in a separate package:
-    //
-    //   npm install @blocksmith/plugin-ai
-    //
-    // Then:
-    //   import { AIPlugin, OpenAICompatibleProvider } from '@blocksmith/plugin-ai';
-    //   const aiPlugin = new AIPlugin({
-    //     provider: new OpenAICompatibleProvider({ ... }),
-    //   });
-    //   createEditor(container, { plugins: [aiPlugin] });
-    // ────────────────────────────────────────────────────────────
+    // ── AI via LiteLLM proxy ────────────────────────────────────
+    // Configure via .env:
+    //   VITE_AI_BASE_URL  → LiteLLM proxy URL (default: http://localhost:4000)
+    //   VITE_AI_MODEL     → Model name to request
+    //   VITE_AI_API_KEY   → LiteLLM master key
+    const AI_BASE_URL = import.meta.env.VITE_AI_BASE_URL || 'http://localhost:4000';
+    const AI_MODEL = import.meta.env.VITE_AI_MODEL || '';
+    const AI_API_KEY = import.meta.env.VITE_AI_API_KEY || '';
 
     // Create plugins
     const autoSave = new AutoSavePlugin({
@@ -121,9 +118,25 @@
     const htmlExport = new HTMLExportPlugin();
     const pdfExport = new PDFExportPlugin();
 
+    const plugins = [autoSave, htmlExport, pdfExport];
+
+    if (AI_MODEL) {
+      console.log(`✅ AI enabled via LiteLLM proxy at ${AI_BASE_URL} (model: ${AI_MODEL})`);
+      plugins.push(new AIPlugin({
+        provider: new OpenAICompatibleProvider({
+          baseUrl: AI_BASE_URL,
+          model: AI_MODEL,
+          apiKey: AI_API_KEY || 'not-needed',
+        }),
+      }));
+    } else {
+      console.log('ℹ️  No VITE_AI_MODEL set — AI features disabled');
+      console.log('   Set VITE_AI_MODEL in .env to enable AI (see .env.example)');
+    }
+
     const editor = createEditor(document.getElementById('editor-container'), {
       placeholder: "Type '/' for commands...",
-      plugins: [autoSave, htmlExport, pdfExport],
+      plugins,
       onReady(ed) {
         // Load from localStorage if available (via the auto-save plugin)
         const savedPlugin = ed.getPlugin('auto-save');
